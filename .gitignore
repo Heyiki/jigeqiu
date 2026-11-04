@@ -9,3 +9,8 @@ test-results/
 *.log
 .env*
 !.env.example
+
+# Local development references; keep out of source snapshots.
+/docs/
+/AGENTS.md
+/CONTRIBUTING.md

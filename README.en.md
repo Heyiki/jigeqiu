@@ -95,15 +95,16 @@ npm run dev
 
 For a ZIP download, replace the `cd` path with the extracted source folder.
 
-Visit **http://127.0.0.1:3000** in your browser.
+Visit **[http://127.0.0.1:3000](http://127.0.0.1:3000)** in your browser.
 No application backend or database is required; keep the server process running.
 
 #### Optional Settings
 
-Copy `.env.example` to `.env` to change `PORT` or set `DISABLE_HMR=true`
+Copy `.env.example` to `.env` to change the bind address (`HOST`) or port (`PORT`), or set `DISABLE_HMR=true`
 to disable development hot reload and file watching. Shell variables take precedence.
 No `.env` file is needed for the defaults; use the matching address if you change the port.
-The development server listens on all network interfaces; use it only on trusted networks.
+The server listens on `127.0.0.1` by default. For LAN access, set `HOST=0.0.0.0`,
+use a trusted network, and access the site over HTTPS.
 
 ### Option 2: Deploy the Static Package
 
@@ -128,7 +129,7 @@ server {
 }
 ```
 
-Validate and reload the configuration, then open **http://127.0.0.1:8080**:
+Validate and reload the configuration, then open **[http://127.0.0.1:8080](http://127.0.0.1:8080)**:
 
 ```sh
 nginx -t

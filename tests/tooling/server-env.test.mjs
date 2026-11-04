@@ -19,17 +19,22 @@ async function availablePort() {
   return port;
 }
 
-async function startWithEnv(t, shellPort) {
+async function startWithEnv(t, shellPort, fileHost, shellHost) {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'jigeqiu-env-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
   const filePort = await availablePort();
-  await writeFile(path.join(directory, '.env'), `PORT=${filePort}\n`);
+  await writeFile(
+    path.join(directory, '.env'),
+    `PORT=${filePort}\n${fileHost ? `HOST=${fileHost}\n` : ''}`,
+  );
   const env = { ...process.env, NODE_ENV: 'production' };
   delete env.PORT;
+  delete env.HOST;
   for (const key of Object.keys(env)) {
     if (key.startsWith('DOTENV_CONFIG_')) delete env[key];
   }
   if (shellPort) env.PORT = String(shellPort);
+  if (shellHost) env.HOST = shellHost;
   const child = spawn(
     process.execPath,
     [
@@ -50,7 +55,7 @@ async function startWithEnv(t, shellPort) {
   child.stderr.on('data', (data) => {
     output += data;
   });
-  const port = await new Promise((resolve, reject) => {
+  const address = await new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error(`Server startup timed out: ${output}`)),
       10000,
@@ -66,15 +71,15 @@ async function startWithEnv(t, shellPort) {
     child.stdout.on('data', (data) => {
       output += data;
       const match = output.match(
-        /Server listening on http:\/\/0\.0\.0\.0:(\d+)/,
+        /Server listening on http:\/\/([^:\s]+):(\d+)/,
       );
       if (match) {
         clearTimeout(timer);
-        resolve(Number(match[1]));
+        resolve({ host: match[1], port: Number(match[2]) });
       }
     });
   });
-  return { port, filePort };
+  return { ...address, filePort };
 }
 
 test('server reads PORT from the working-directory .env file', async (t) => {
@@ -88,4 +93,21 @@ test('shell PORT takes precedence over .env', async (t) => {
   const shellPort = await availablePort();
   const { port } = await startWithEnv(t, shellPort);
   assert.equal(port, shellPort);
+});
+
+test('server defaults to the loopback address', async (t) => {
+  const { host, port } = await startWithEnv(t);
+  assert.equal(host, '127.0.0.1');
+  const response = await fetch(`http://${host}:${port}/`);
+  assert.equal(response.headers.get('x-powered-by'), 'Express');
+});
+
+test('server reads HOST from .env', async (t) => {
+  const { host } = await startWithEnv(t, undefined, '0.0.0.0');
+  assert.equal(host, '0.0.0.0');
+});
+
+test('shell HOST takes precedence over .env', async (t) => {
+  const { host } = await startWithEnv(t, undefined, '0.0.0.0', '127.0.0.1');
+  assert.equal(host, '127.0.0.1');
 });

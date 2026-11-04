@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+  const HOST = process.env.HOST || '127.0.0.1';
   const isProd = process.env.NODE_ENV === 'production';
 
   // Versioned URLs refresh changed wallpapers without disabling browser caching.
@@ -33,8 +34,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server listening on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`Server listening on http://${HOST}:${PORT}`);
   });
 }
 
