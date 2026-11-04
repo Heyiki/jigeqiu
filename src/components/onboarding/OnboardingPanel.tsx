@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, Plus, Upload, Pin, X } from 'lucide-react';
 import { createTranslator } from '../../i18n';
 import { DesktopDialog, desktopDialogButton } from '../desktop/DesktopDialog';
@@ -13,6 +13,22 @@ export function OnboardingPanel({ controller: c, language, hasBookmarks, onStart
 }) {
   const t = createTranslator(language);
   const { phase, task } = c.flow;
+  const [noticeHovered, setNoticeHovered] = useState(false);
+  const [noticeFocused, setNoticeFocused] = useState(false);
+  const notice = c.unavailable ? 'onboardingTourUnavailable'
+    : c.saveFailed ? 'onboardingProgressSaveFailed'
+      : c.cookieNotice === 'saved' ? 'onboardingHttpRemembered'
+        : c.cookieNotice === 'failed' ? 'onboardingWelcomeNotRemembered' : null;
+  useEffect(() => {
+    if (!notice) {
+      setNoticeHovered(false);
+      setNoticeFocused(false);
+      return;
+    }
+    if (noticeHovered || noticeFocused) return;
+    const timer = window.setTimeout(c.dismissNotice, 6000);
+    return () => window.clearTimeout(timer);
+  }, [notice, noticeHovered, noticeFocused, c.dismissNotice]);
   useEffect(() => {
     if (phase === 'result' && c.showBackup) c.backupDisplayed();
   }, [phase, c.showBackup, c.backupDisplayed]);
@@ -35,9 +51,15 @@ export function OnboardingPanel({ controller: c, language, hasBookmarks, onStart
     <button type="button" className={desktopDialogButton} onClick={onBackup}><Download size={15} />{t('onboardingBackupTitle')}</button>
   </div>;
   return <>
-    {(c.saveFailed || c.unavailable) && <div role="status" className="fixed left-3 right-3 top-16 z-[1500] mx-auto flex max-w-xl items-center gap-3 rounded-md border border-amber-500/40 bg-white p-3 text-xs text-zinc-900 shadow dark:bg-zinc-900 dark:text-zinc-100">
-      <p className="flex-1">{t(c.unavailable ? 'onboardingTourUnavailable' : 'onboardingProgressSaveFailed')}</p>
-      <button aria-label={t('onboardingExit')} onClick={c.dismissNotice}><X size={16} /></button>
+    {notice && <div role="status" data-onboarding="notice"
+      onMouseEnter={() => setNoticeHovered(true)} onMouseLeave={() => setNoticeHovered(false)}
+      onFocusCapture={() => setNoticeFocused(true)}
+      onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setNoticeFocused(false); }}
+      className="fixed left-3 right-3 top-16 z-[1500] mx-auto flex max-w-xl items-center gap-3 rounded-md border border-amber-500/40 bg-white p-3 text-xs text-zinc-900 shadow dark:bg-zinc-900 dark:text-zinc-100">
+      <p className="min-w-0 flex-1">{t(notice)}</p>
+      <button aria-label={t('onboardingDismissNotice')} title={t('onboardingDismissNotice')}
+        className="shrink-0 rounded p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+        onClick={c.dismissNotice}><X size={16} /></button>
     </div>}
     {phase === 'tour' && <OnboardingTour language={language} onComplete={c.tourComplete} onExit={c.exit} onUnavailable={c.fail} />}
     {(phase === 'welcome' || phase === 'taskPicker') && <DesktopDialog compact

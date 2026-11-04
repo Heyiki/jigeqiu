@@ -63,7 +63,8 @@ const waitProgress = (page, path) => page.waitForFunction(path => {
   return path.split('.').reduce((value, key) => value?.[key], record) === true;
 }, path);
 
-async function device({ width = 1440, en = false, dark = false, reduced = false, fresh = false } = {}) {
+async function device({ width = 1440, en = false, dark = false, reduced = false, fresh = false,
+  insecure = false, blockCookies = false, noLocks = false, clock = false } = {}) {
   const context = await browser.newContext({
     viewport: { width, height: width === 1440 ? 1000 : 844 },
     locale: en ? 'en-US' : 'zh-CN', colorScheme: dark ? 'dark' : 'light',
@@ -71,7 +72,17 @@ async function device({ width = 1440, en = false, dark = false, reduced = false,
   });
   await context.route('**/*', route => {
     const url = new URL(route.request().url());
+    if (insecure && url.origin === origin.replace('127.0.0.1', 'onboarding.test')) {
+      return route.fetch({ url: route.request().url().replace(url.origin, origin) })
+        .then(response => route.fulfill({ response }));
+    }
     return url.origin === origin ? route.continue() : route.fulfill({ body: '', contentType: 'text/plain' });
+  });
+  if (blockCookies) await context.addInitScript(() => {
+    Object.defineProperty(Document.prototype, 'cookie', { configurable: true, get: () => '', set() {} });
+  });
+  if (noLocks) await context.addInitScript(() => {
+    Object.defineProperty(navigator, 'locks', { configurable: true, value: undefined });
   });
   if (!fresh) await context.addInitScript(({ en, dark }) => {
     // A preference record deliberately represents an existing user, not first use.
@@ -80,6 +91,7 @@ async function device({ width = 1440, en = false, dark = false, reduced = false,
     }));
   }, { en, dark });
   const page = await context.newPage();
+  if (clock) await page.clock.install();
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push({ url: page.url(), message: error.message }));
   page.on('console', message => {
@@ -97,7 +109,7 @@ async function device({ width = 1440, en = false, dark = false, reduced = false,
       sourceRequests.push(url.pathname);
     }
   });
-  await page.goto(origin);
+  await page.goto(insecure ? origin.replace('127.0.0.1', 'onboarding.test') : origin);
   await anchor(page, 'desktop').waitFor();
   return page;
 }
@@ -160,6 +172,117 @@ try {
   origin = await startServer();
   const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
   browser = await chromium.launch({ headless: true });
+  // Vite's development client needs trusted-context APIs; insecure-origin cases
+  // exercise the production artifact, not that development-only client.
+  if (build) {
+  await run('http-cookie-welcome-reload-and-replay', async () => {
+    const page = await device({ fresh: true, insecure: true });
+    assert.equal(await page.evaluate(() => isSecureContext), false, 'Real HTTP origin is insecure');
+    assert.equal(await page.evaluate(() => typeof navigator.locks), 'undefined');
+    const welcome = dialog(page, text('WelcomeTitle'));
+    await welcome.waitFor();
+    const notice = anchor(page, 'notice');
+    await notice.waitFor();
+    assert.match(await notice.innerText(), /HTTP/);
+    const cookies = await page.context().cookies();
+    const marker = cookies.find(cookie => cookie.name === 'jigeqiu_onboarding_seen_v1');
+    assert.ok(marker, 'HTTP remembers only a lightweight welcome marker');
+    assert.equal(marker.value, '1');
+    assert.equal(marker.path, '/');
+    assert.equal(marker.sameSite, 'Lax');
+    assert.equal(marker.secure, false);
+    const remainingDays = (marker.expires - Date.now() / 1000) / 86400;
+    assert.ok(remainingDays > 399 && remainingDays <= 400, 'Marker lasts at most 400 days');
+    assert.equal(await progress(page), null, 'Cookie mode never claims to persist full progress');
+    assert.equal(await library(page), null, 'Welcome never writes assets');
+    await welcome.getByRole('button', { name: text('Skip'), exact: true }).click();
+    await page.reload();
+    await anchor(page, 'guide').waitFor();
+    assert.equal(await welcome.count(), 0, 'Cookie suppresses welcome on reload');
+    assert.equal(await notice.count(), 0, 'Reload with a marker does not repeat the notice');
+    await guideTask(page, 'tour');
+    const picker = await tour(page);
+    await picker.getByRole('button', { name: text('Later'), exact: true }).click();
+    assert.equal(await progress(page), null, 'Manual replay never writes unlocked full progress');
+    assert.equal(await library(page), null);
+  });
+  await run('http-cookie-blocked-notice-expires-once', async () => {
+    const page = await device({ fresh: true, insecure: true, blockCookies: true, clock: true });
+    const welcome = dialog(page, text('WelcomeTitle'));
+    await welcome.waitFor();
+    const notice = anchor(page, 'notice');
+    await notice.waitFor();
+    assert.match(await notice.innerText(), /暂时无法记住引导状态/);
+    await welcome.getByRole('button', { name: text('Skip'), exact: true }).click();
+    await notice.hover();
+    await page.clock.runFor(7000);
+    assert.equal(await notice.isVisible(), true, 'Hover pauses dismissal');
+    const close = notice.getByRole('button');
+    await close.focus();
+    await page.mouse.move(0, 0);
+    await page.clock.runFor(7000);
+    assert.equal(await notice.isVisible(), true, 'Keyboard focus pauses dismissal');
+    await anchor(page, 'guide').focus();
+    await page.clock.runFor(5999);
+    assert.equal(await notice.isVisible(), true);
+    await page.clock.runFor(2);
+    await notice.waitFor({ state: 'hidden' });
+    await guideTask(page, 'tour');
+    const picker = await tour(page);
+    await picker.getByRole('button', { name: text('Later'), exact: true }).click();
+    assert.equal(await notice.count(), 0, 'Later steps do not repeat the same failed notice');
+    assert.equal(await progress(page), null);
+    assert.equal(await library(page), null);
+  });
+  await run('http-cookie-notice-manual-dismiss', async () => {
+    const page = await device({ fresh: true, insecure: true });
+    await dialog(page, text('WelcomeTitle')).getByRole('button', { name: text('Skip'), exact: true }).click();
+    const notice = anchor(page, 'notice');
+    await notice.getByRole('button').click();
+    await notice.waitFor({ state: 'hidden' });
+    await guideTask(page, 'tour');
+    await page.locator('.driver-popover-close-btn').click();
+    assert.equal(await notice.count(), 0, 'Dismissed informational notice stays dismissed');
+  });
+  for (const width of [1440, 320]) for (const dark of [false, true]) for (const en of [false, true]) {
+    await run(`http-cookie-layout-and-asset-lock-${width}-${dark}-${en}`, async () => {
+      const page = await device({ width, dark, en, insecure: true });
+      await guideTask(page, 'add', en);
+      const notice = anchor(page, 'notice');
+      await contained(notice, width, page.viewportSize().height);
+      if (en) assert.doesNotMatch(await notice.innerText(), /[\u3400-\u9fff]/);
+      const close = notice.getByRole('button');
+      await close.focus();
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await close.evaluate(element => getComputedStyle(element).outlineStyle), 'solid');
+      await page.screenshot({ path: resolve(screenshots, `http-cookie-${width}-${dark}-${en}.png`) });
+      await close.click();
+      await anchor(page, 'add-url').fill('https://http.example.invalid/draft');
+      await anchor(page, 'add-title').fill('HTTP synthetic draft');
+      await anchor(page, 'add-save').click();
+      const form = page.getByRole('dialog').filter({ has: anchor(page, 'add-url') });
+      await form.getByRole('alert').waitFor();
+      assert.equal(await library(page), null, 'Cookie fallback never bypasses the asset write lock');
+      assert.equal(await anchor(page, 'add-title').inputValue(), 'HTTP synthetic draft');
+      assert.equal(await notice.count(), 0, 'Asset failure does not resurrect the onboarding notice');
+    });
+  }
+  }
+  await run('secure-missing-locks-never-falls-back-to-cookie', async () => {
+    const page = await device({ fresh: true, noLocks: true, clock: true });
+    assert.equal(await page.evaluate(() => isSecureContext), true);
+    const notice = page.getByRole('status').filter({ hasText: text('ProgressSaveFailed') });
+    await notice.waitFor();
+    assert.deepEqual(await page.context().cookies(), []);
+    assert.equal(await progress(page), null);
+    await page.clock.runFor(6001);
+    await notice.waitFor({ state: 'hidden' });
+    await guideTask(page, 'tour');
+    const picker = await tour(page);
+    await picker.getByRole('button', { name: text('Later'), exact: true }).click();
+    assert.equal(await notice.count(), 0, 'Repeated save failure stays quiet in this page session');
+  });
   for (const width of [1440, 320]) for (const dark of [false, true]) for (const en of [false, true]) {
     await run(`task-hint-warning-${width}-${dark ? 'dark' : 'light'}-${en ? 'en' : 'zh'}`, async () => {
       const page = await device({ width, dark, en });

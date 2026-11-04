@@ -5,9 +5,11 @@ import {
   type ProgressPatch,
 } from './progress';
 import type { OnboardingEntry, OnboardingEvent, OnboardingTask } from './types';
+import { hasWelcomeCookie, rememberWelcomeCookie, usesWelcomeCookie } from './welcome-cookie';
 
 function snapshot() {
-  try { return { eligible: detectNewUser(localStorage), ...readProgress(localStorage) }; }
+  try { return { eligible: detectNewUser(localStorage)
+    && !(usesWelcomeCookie() && hasWelcomeCookie()), ...readProgress(localStorage) }; }
   catch { return { eligible: false, ...readProgress({ getItem() { throw new Error(); }, setItem() {}, length: 0, key() { return null; } }) }; }
 }
 
@@ -26,16 +28,30 @@ export function useOnboarding() {
   const [saveFailed, setSaveFailed] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
+  const [cookieNotice, setCookieNotice] = useState<'saved' | 'failed' | null>(null);
+  const noticesShown = useRef(new Set<string>());
+  const notify = useCallback((kind: 'save' | 'tour' | 'cookie-saved' | 'cookie-failed') => {
+    if (noticesShown.current.has(kind)) return;
+    noticesShown.current.add(kind);
+    if (kind === 'save') setSaveFailed(true);
+    else if (kind === 'tour') setUnavailable(true);
+    else setCookieNotice(kind === 'cookie-saved' ? 'saved' : 'failed');
+  }, []);
+  const rememberWelcome = useCallback(() => {
+    notify(rememberWelcomeCookie() ? 'cookie-saved' : 'cookie-failed');
+  }, [notify]);
 
   const save = useCallback((patch: ProgressPatch) => {
     progress.current = mergeProgress(progress.current, patch);
+    // Cookie mode remembers exposure only, never unlocked full progress or assets.
+    if (usesWelcomeCookie()) return;
     try {
       void updateProgressLocked(localStorage, progress.current, navigator.locks).then(result => {
         if (result.ok) progress.current = mergeProgress(progress.current, result.progress);
-        else setSaveFailed(true);
-      }, () => setSaveFailed(true));
-    } catch { setSaveFailed(true); }
-  }, []);
+        else notify('save');
+      }, () => notify('save'));
+    } catch { notify('save'); }
+  }, [notify]);
   const exit = useCallback(() => {
     if (flowRef.current.phase === 'welcome') save({ welcomeSkipped: true });
     dispatch({ type: 'exit' });
@@ -46,22 +62,30 @@ export function useOnboarding() {
     eligible.current = false;
     setUnavailable(false);
     setShowBackup(false);
+    if (usesWelcomeCookie() && !hasWelcomeCookie()
+      && !noticesShown.current.has('cookie-failed')) rememberWelcome();
     dispatch({ type: 'start', entry, hasBookmarks });
-  }, []);
+  }, [rememberWelcome]);
   const offerWelcome = useCallback(() => {
     if (!eligible.current || flowRef.current.phase !== 'idle') return;
     eligible.current = false;
     const request = ++welcomeRequest.current;
+    if (usesWelcomeCookie()) {
+      if (hasWelcomeCookie()) return;
+      rememberWelcome();
+      dispatch({ type: 'welcome' });
+      return;
+    }
     try {
       void claimWelcome(localStorage, navigator.locks).then(result => {
         if (result.progress) progress.current = mergeProgress(progress.current, result.progress);
         if (request !== welcomeRequest.current || flowRef.current.phase !== 'idle') return;
         if (result.claimed) dispatch({ type: 'welcome' });
-        else if (result.error) setSaveFailed(true);
-      }, () => setSaveFailed(true));
-    } catch { setSaveFailed(true); }
+        else if (result.error) notify('save');
+      }, () => notify('save'));
+    } catch { notify('save'); }
     return () => { welcomeRequest.current++; };
-  }, []);
+  }, [notify, rememberWelcome]);
   const finish = useCallback((task: OnboardingTask, bookmarkId?: string) => {
     if (flowRef.current.phase !== 'task' || flowRef.current.task !== task) return;
     save({ tasks: { [task]: true } });
@@ -87,7 +111,7 @@ export function useOnboarding() {
     return () => window.removeEventListener('storage', sync);
   }, []);
   return {
-    flow, start, exit, finish, onEvent, offerWelcome, showBackup, saveFailed, unavailable,
+    flow, start, exit, finish, onEvent, offerWelcome, showBackup, saveFailed, unavailable, cookieNotice,
     cancelTask: useCallback(() => {
       if (flowRef.current.phase === 'task') exit();
     }, [exit]),
@@ -96,7 +120,7 @@ export function useOnboarding() {
       save({ tourCompleted: true });
       dispatch({ type: 'tour-complete' });
     }, [save]),
-    fail: useCallback(() => { dispatch({ type: 'exit' }); setUnavailable(true); }, []),
-    dismissNotice: useCallback(() => { setSaveFailed(false); setUnavailable(false); }, []),
+    fail: useCallback(() => { dispatch({ type: 'exit' }); notify('tour'); }, [notify]),
+    dismissNotice: useCallback(() => { setSaveFailed(false); setUnavailable(false); setCookieNotice(null); }, []),
   };
 }

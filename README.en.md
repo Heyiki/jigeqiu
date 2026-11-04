@@ -242,6 +242,13 @@ Bookmarks and preferences use browser LocalStorage. Icon caches and custom
 wallpapers use IndexedDB. The server distributes the application files,
 not your bookmark library.
 
+On insecure HTTP origins, onboarding alone falls back to a lightweight cookie
+lasting up to 400 days. It remembers welcome exposure, not bookmarks or full task
+progress, and is sent with requests to the same host. Browser policies or clearing
+data may remove it sooner. Related notices dismiss after about six seconds,
+pause while hovered or focused, and do not repeat within the current page session.
+This fallback does not bypass HTTPS/Web Locks requirements for protected writes.
+
 Clearing site data, deleting a browser profile, or ending a private browsing
 session can remove local data. Storage capacity depends on the browser and
 device. The recycle bin is not a substitute for an independent backup.

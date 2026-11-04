@@ -28,6 +28,15 @@ export const onboardingMessages = {
     zh: '引导进度未能保存，下次可能再次出现。收藏数据不受影响。',
     en: 'Tour progress could not be saved and may appear again next time. Your bookmarks are unaffected.',
   },
+  onboardingHttpRemembered: {
+    zh: '当前为HTTP访问，已使用简化方式记住引导状态；部分保存操作需要HTTPS。',
+    en: 'You are using HTTP. A simple marker remembers that you have seen the tour; some save operations require HTTPS.',
+  },
+  onboardingWelcomeNotRemembered: {
+    zh: '暂时无法记住引导状态，下次可能再次出现。',
+    en: 'Your tour status could not be remembered. The welcome may appear again next time.',
+  },
+  onboardingDismissNotice: { zh: '关闭提示', en: 'Dismiss notice' },
   onboardingImportFile: {
     zh: '选择浏览器导出的书签HTML文件。普通网页不能直接读取浏览器书签。',
     en: 'Export a bookmark HTML file from your browser, then choose it here. This webpage cannot read browser bookmarks directly.',
