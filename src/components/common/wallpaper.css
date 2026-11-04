@@ -1,0 +1,125 @@
+.wallpaper-root {
+  color: var(--desktop-text);
+  background: var(--wallpaper-base);
+  --wallpaper-wash: linear-gradient(to bottom, rgb(0 0 0 / 14%), rgb(0 0 0 / 10%) 22%, rgb(0 0 0 / 10%) 78%, rgb(0 0 0 / 12%));
+  --wallpaper-stage-wash: rgb(0 0 0 / 36%);
+  --wallpaper-label: #f8fafc;
+  --wallpaper-label-shadow: 0 1px 2px rgb(0 0 0 / 90%), 0 1px 5px rgb(0 0 0 / 65%);
+}
+
+[data-wallpaper="cyan-lake"] {
+  --wallpaper-base: #d6e7e8;
+  --wallpaper-image: url("/wallpapers/cyan-lake-desktop.webp?v=2");
+  --wallpaper-thumbnail: url("/wallpapers/cyan-lake-thumb.webp?v=2");
+}
+
+[data-wallpaper="snow-mountain"] {
+  --wallpaper-base: #e0e3e6;
+  --wallpaper-image: url("/wallpapers/snow-mountain-desktop.webp?v=2");
+  --wallpaper-thumbnail: url("/wallpapers/snow-mountain-thumb.webp?v=2");
+}
+
+.wallpaper-canvas,
+.wallpaper-preview {
+  background-color: var(--wallpaper-base);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.wallpaper-canvas {
+  background-image: var(--wallpaper-image);
+  background-size: cover;
+}
+
+.wallpaper-preview {
+  position: relative;
+  overflow: hidden;
+  background-image: var(--wallpaper-thumbnail);
+}
+
+.wallpaper-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--wallpaper-wash);
+}
+
+.wallpaper-scrim {
+  background: var(--wallpaper-wash);
+}
+
+.desktop-stage {
+  isolation: isolate;
+}
+
+.desktop-stage .desktop-icon-label,
+.desktop-wallpaper-heading {
+  color: var(--wallpaper-label);
+  text-shadow: var(--wallpaper-label-shadow);
+}
+
+.desktop-pagination button:enabled:hover {
+  background: rgb(248 250 252 / 15%);
+}
+
+/* One shared backdrop under the entire icon area, never over the icons. */
+.desktop-stage::before {
+  content: "";
+  position: absolute;
+  inset: -40px calc(50% - 50vw) -40px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--wallpaper-stage-wash) 100px, var(--wallpaper-stage-wash) calc(100% - 140px), transparent);
+}
+
+.desktop-dialog-backdrop {
+  /* The desktop is already tinted; do not apply the wallpaper wash twice. */
+  background: transparent;
+  /* Keep the standard declaration last so production minification retains it. */
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.reduced-transparency .desktop-dialog-backdrop {
+  background: var(--desktop-launchpad);
+}
+
+:is(.dark, .dark-glass) .wallpaper-root {
+  background: #24282a;
+  --wallpaper-wash: linear-gradient(to bottom, rgb(0 0 0 / 62%), rgb(0 0 0 / 28%) 22%, rgb(0 0 0 / 28%) 78%, rgb(0 0 0 / 45%));
+  --wallpaper-stage-wash: rgb(0 0 0 / 46%);
+  --wallpaper-label: #f2f5f4;
+  --wallpaper-label-shadow: none;
+}
+
+.reduced-transparency .wallpaper-root {
+  --wallpaper-stage-wash: #eff4f2;
+  --wallpaper-label: var(--desktop-text);
+  --wallpaper-label-shadow: none;
+}
+
+.reduced-transparency:is(.dark, .dark-glass) .wallpaper-root {
+  --wallpaper-stage-wash: #1b2123;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .desktop-dialog-backdrop {
+    background: var(--desktop-launchpad);
+  }
+
+  .wallpaper-root {
+    --wallpaper-stage-wash: #eff4f2;
+    --wallpaper-label: var(--desktop-text);
+    --wallpaper-label-shadow: none;
+  }
+
+  :is(.dark, .dark-glass) .wallpaper-root {
+    --wallpaper-stage-wash: #1b2123;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-wallpaper="cyan-lake"] { --wallpaper-image: url("/wallpapers/cyan-lake-mobile.webp?v=2"); }
+  [data-wallpaper="snow-mountain"] { --wallpaper-image: url("/wallpapers/snow-mountain-mobile.webp?v=2"); }
+}

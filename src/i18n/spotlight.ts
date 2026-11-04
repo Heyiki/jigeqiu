@@ -1,0 +1,28 @@
+import type { MessageTable } from './index';
+
+export const spotlightMessages = {
+  spotlightEngineTitle: { zh: '使用 {engine} 搜索 “{query}”', en: 'Search {engine} for “{query}”' },
+  spotlightEngineDescription: { zh: '使用 {engine} 在全网查找相关内容', en: 'Search the web with {engine}' },
+  commandSystemBadge: { zh: '系统指令', en: 'System command' },
+  commandOpenAction: { zh: '↵ 打开', en: '↵ Open' },
+  commandApplyAction: { zh: '↵ 应用', en: '↵ Apply' },
+  commandAllTitle: { zh: '全部收藏管理', en: 'Manage all bookmarks' },
+  commandAllDescription: { zh: '查看与管理全部收藏', en: 'View and manage all bookmarks' },
+  commandSettingTitle: { zh: '设置', en: 'Settings' },
+  commandAppearanceDescription: { zh: '打开外观与壁纸设置', en: 'Open appearance and wallpaper settings' },
+  commandAddTitle: { zh: '添加收藏', en: 'Add bookmark' },
+  commandAddDescription: { zh: '打开添加网址表单', en: 'Open the bookmark form' },
+  commandSearchTitle: { zh: '搜索引擎管理', en: 'Manage search engines' },
+  commandSearchDescription: { zh: '管理搜索引擎及快捷指令', en: 'Manage search engines and shortcuts' },
+  commandStartTitle: { zh: '启动台', en: 'Launchpad' },
+  commandStartDescription: { zh: '打开启动台，浏览全部收藏', en: 'Open Launchpad to browse all bookmarks' },
+  commandTrashTitle: { zh: '回收站', en: 'Recycle bin' },
+  commandTrashDescription: { zh: '打开回收站，查看已删除的收藏与目录', en: 'View deleted bookmarks and folders' },
+  commandThemeTitle: { zh: '外观设置', en: 'Appearance settings' },
+  commandDarkTitle: { zh: '夜间模式', en: 'Night mode' },
+  commandDarkDescription: { zh: '设为夜间模式并保存', en: 'Set and save night mode' },
+  commandLightTitle: { zh: '日间模式', en: 'Day mode' },
+  commandLightDescription: { zh: '设为日间模式并保存', en: 'Set and save day mode' },
+  commandHelpTitle: { zh: '使用指南', en: 'User guide' },
+  commandHelpDescription: { zh: '打开使用指南', en: 'Open the user guide' },
+} as const satisfies MessageTable;

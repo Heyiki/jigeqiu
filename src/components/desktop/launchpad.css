@@ -1,0 +1,132 @@
+.launchpad-shell {
+  isolation: isolate;
+  color: var(--desktop-text);
+  background: var(--desktop-launchpad);
+  animation: launchpad-appear 140ms ease-out;
+}
+
+.launchpad-shell::before,
+.launchpad-shell::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Repaint only the wallpaper; backdrop-filter would also expose desktop icons. */
+.launchpad-shell::before {
+  inset: 0;
+  z-index: -2;
+  background: var(--wallpaper-base) var(--wallpaper-image) center / cover no-repeat;
+}
+
+.launchpad-shell::after {
+  inset: 0;
+  z-index: -1;
+  background: var(--wallpaper-wash), linear-gradient(var(--wallpaper-stage-wash), var(--wallpaper-stage-wash));
+}
+
+.launchpad-shell .launchpad-title,
+.launchpad-shell .desktop-icon-label,
+.launchpad-shell .launchpad-letter,
+.launchpad-header p.launchpad-muted,
+.launchpad-scrollbar .launchpad-muted {
+  color: var(--wallpaper-label);
+  text-shadow: var(--wallpaper-label-shadow);
+}
+
+.launchpad-muted {
+  color: var(--desktop-muted);
+}
+
+.launchpad-shell input.launchpad-search {
+  color: var(--desktop-text) !important;
+  background-color: var(--desktop-input);
+  border-color: var(--desktop-border);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
+
+.launchpad-shell input.launchpad-search::placeholder {
+  color: var(--desktop-muted) !important;
+}
+
+.launchpad-search:focus,
+.launchpad-icon:focus-visible,
+.launchpad-close:focus-visible,
+.launchpad-letter:focus-visible,
+.launchpad-more:focus-visible {
+  outline: 2px solid var(--desktop-focus);
+  outline-offset: 2px;
+}
+
+.launchpad-icon {
+  color: var(--desktop-text);
+  transition: background-color 120ms ease;
+}
+
+.launchpad-icon:hover,
+.launchpad-close:hover {
+  background: var(--desktop-hover);
+}
+
+.launchpad-icon[data-selected="true"] {
+  background: var(--desktop-selected);
+  box-shadow: inset 0 0 0 1px var(--desktop-border);
+}
+
+.launchpad-close,
+.launchpad-more {
+  color: var(--desktop-text);
+  background: var(--desktop-panel);
+  border: 1px solid var(--desktop-border);
+}
+
+.launchpad-letter:disabled {
+  opacity: 0.4;
+}
+
+.launchpad-letter[aria-current="location"] {
+  background: rgb(2 132 199 / 65%);
+  box-shadow: inset 0 0 0 1px rgb(248 250 252 / 65%);
+}
+
+.launchpad-letter:enabled:hover {
+  background: rgb(2 132 199 / 45%);
+}
+
+.reduced-transparency .launchpad-letter[aria-current="location"] {
+  background: var(--desktop-selected);
+  box-shadow: inset 0 0 0 1px var(--desktop-border);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .launchpad-letter[aria-current="location"] {
+    background: var(--desktop-selected);
+    box-shadow: inset 0 0 0 1px var(--desktop-border);
+  }
+}
+
+.launchpad-shell .launchpad-scrollbar {
+  scrollbar-color: var(--desktop-border) transparent;
+  scrollbar-width: thin;
+}
+
+.launchpad-shell .launchpad-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.launchpad-shell .launchpad-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--desktop-border);
+}
+
+@keyframes launchpad-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launchpad-shell,
+  .launchpad-icon {
+    animation: none;
+    transition: none;
+  }
+}

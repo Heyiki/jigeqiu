@@ -1,0 +1,331 @@
+@import "tailwindcss";
+@import "./components/common/site-icon.css";
+@import "./components/common/launchpad-mark.css";
+@import "./components/desktop/desktop-theme.css";
+@import "./components/account/search-engine-order.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+@layer base {
+  :where(button, a[href], [role="button"], [role="link"], input[type="button"], input[type="submit"], input[type="reset"], input[type="checkbox"], input[type="radio"], select):not(:disabled):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  :where(button, a[href], [role="button"], [role="link"], input, select):is(:disabled, [aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
+
+  :root {
+    /* Day / Light mode: Maximum contrast, defined slate boundaries, pitch dark text */
+    --glass-bg: rgba(255, 255, 255, 0.94);
+    --glass-border: rgba(203, 213, 225, 0.9);
+    --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 1px 0 rgba(15, 23, 42, 0.05);
+    --glass-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.06);
+    --text-primary: #020617;
+    --text-secondary: #0f172a;
+    --text-muted: #334155;
+  }
+
+  .dark-glass {
+    --glass-bg: rgba(20, 24, 33, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-inner-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4);
+    --glass-shadow: 0 18px 44px -10px rgba(0, 0, 0, 0.5), 0 6px 20px -6px rgba(0, 0, 0, 0.35);
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+  }
+
+  .reduced-transparency {
+    --glass-bg: rgba(255, 255, 255, 0.98);
+    --glass-border: rgba(148, 163, 184, 0.7);
+    --glass-inner-shadow: none;
+    --glass-shadow: 0 10px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.06);
+  }
+
+  .reduced-transparency.dark-glass {
+    --glass-bg: rgba(15, 19, 27, 0.98);
+    --glass-border: rgba(71, 85, 105, 0.85);
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.45);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 65, 85, 0.75);
+}
+
+/* Only the management page changes the document scrollbar. */
+html.management-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+
+html.management-scroll::-webkit-scrollbar-thumb {
+  background: rgb(71 85 105 / 58%);
+}
+
+html.management-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgb(51 65 85 / 80%);
+}
+
+html.management-scroll:is(.dark, .dark-glass)::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225 / 45%);
+}
+
+html.management-scroll:is(.dark, .dark-glass)::-webkit-scrollbar-thumb:hover {
+  background: rgb(226 232 240 / 65%);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html.management-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: #64748b transparent;
+  }
+}
+
+.back-to-top {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  margin-bottom: env(safe-area-inset-bottom);
+  z-index: 40;
+  animation: back-to-top-appear 160ms ease-out;
+}
+
+.back-to-top > button {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--desktop-border);
+  background: var(--desktop-panel);
+  color: var(--desktop-text);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 14%);
+  transition: background-color 140ms, box-shadow 140ms;
+}
+
+.back-to-top > button:hover {
+  background: var(--desktop-tip);
+  box-shadow: 0 5px 18px rgb(0 0 0 / 20%);
+}
+
+.back-to-top > button:focus-visible {
+  outline: 2px solid var(--desktop-focus);
+  outline-offset: 3px;
+}
+
+.back-to-top > [role="tooltip"] {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--desktop-border);
+  background: var(--desktop-tip);
+  color: var(--desktop-text);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+  font-size: 12px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.back-to-top:has(button:hover, button:focus-visible) > [role="tooltip"] {
+  visibility: visible;
+}
+
+@keyframes back-to-top-appear {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-to-top { animation: none; }
+  .back-to-top > button { transition: none; }
+}
+
+/* Launchpad visible scrollbar */
+.launchpad-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.launchpad-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+.launchpad-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 9999px;
+}
+.launchpad-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* Glass panel utility */
+.liquid-glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(14px) saturate(110%);
+  backdrop-filter: blur(14px) saturate(110%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+}
+
+.liquid-glass-dock {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner-shadow);
+}
+
+.liquid-glass-subtle {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.dark-glass .liquid-glass-subtle {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Dedicated high-contrast label chip for desktop icons on wallpapers */
+.desktop-label-chip {
+  background-color: rgba(255, 255, 255, 0.88);
+  color: #020617;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.dark-glass .desktop-label-chip {
+  background-color: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Subtle icon wiggle in desktop edit mode */
+@keyframes soft-wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-0.75deg) translateY(-0.5px); }
+  75% { transform: rotate(0.75deg) translateY(0.5px); }
+  100% { transform: rotate(0deg); }
+}
+
+.editing-wiggle {
+  animation: soft-wiggle 0.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editing-wiggle {
+    animation: none;
+  }
+}
+
+/* Light mode contrast enhancements: ensures crisp text readability on all wallpapers */
+html:not(.dark-glass) body {
+  color: #020617;
+}
+
+html:not(.dark-glass) .text-slate-400 {
+  color: #475569 !important; /* slate-600: strong contrast against white/glass */
+}
+
+html:not(.dark-glass) .text-slate-500 {
+  color: #334155 !important; /* slate-700: deep readable charcoal */
+}
+
+html:not(.dark-glass) .text-slate-600 {
+  color: #1e293b !important; /* slate-800 */
+}
+
+html:not(.dark-glass) .text-slate-700 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+html:not(.dark-glass) .text-slate-800,
+html:not(.dark-glass) .text-slate-900,
+html:not(.dark-glass) .text-slate-950 {
+  color: #020617 !important; /* pitch black */
+}
+
+/* Page titles in day mode: guaranteed jet-black */
+html:not(.dark-glass) h1:not([class*="text-white"]),
+html:not(.dark-glass) h2:not([class*="text-white"]):not(.launchpad-title) {
+  color: #020617 !important;
+}
+
+/* Light mode card border definition */
+html:not(.dark-glass) .border-white\/60,
+html:not(.dark-glass) .border-white\/50,
+html:not(.dark-glass) .border-white\/40,
+html:not(.dark-glass) .border-slate-200\/60,
+html:not(.dark-glass) .border-slate-200\/50,
+html:not(.dark-glass) .border-slate-200\/40 {
+  border-color: rgba(148, 163, 184, 0.65) !important;
+}
+
+/* Light mode inputs and form controls */
+html:not(.dark-glass) input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+html:not(.dark-glass) select,
+html:not(.dark-glass) textarea {
+  color: #020617 !important;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(148, 163, 184, 0.7);
+}
+
+html:not(.dark-glass) input::placeholder,
+html:not(.dark-glass) textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* High contrast tag badges in light mode */
+html:not(.dark-glass) .bg-black\/5 {
+  background-color: rgba(15, 23, 42, 0.07) !important;
+}
+
+/* macOS Dock Icon Launch Bounce Animation */
+@keyframes macos-dock-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+  25% {
+    transform: translateY(-22px) scale(1.08);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+  75% {
+    transform: translateY(-10px) scale(1.04);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+}
+
+.animate-dock-bounce {
+  animation: macos-dock-bounce 0.8s cubic-bezier(0.28, 0.84, 0.42, 1) forwards;
+}

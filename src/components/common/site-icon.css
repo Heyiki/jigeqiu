@@ -1,0 +1,104 @@
+.site-icon {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+  user-select: none;
+}
+
+/* Owning layouts can override these defaults with fixed w/h utility dimensions. */
+@layer components {
+  .site-icon-xs { width: 16px; height: 16px; }
+  .site-icon-sm { width: 24px; height: 24px; }
+  .site-icon-md { width: 40px; height: 40px; }
+  .site-icon-lg { width: 64px; height: 64px; }
+  .site-icon-xl { width: 80px; height: 80px; }
+}
+
+.site-icon-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.site-icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--fallback-bg, #d9e5f4);
+  color: var(--fallback-fg, #253e64);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 6%);
+}
+
+.site-icon-fallback[data-fallback-tone="0"] {
+  --fallback-bg: #d9e5f4;
+  --fallback-fg: #253e64;
+  --fallback-dark-bg: #283e5a;
+  --fallback-dark-fg: #c8dcf5;
+}
+
+.site-icon-fallback[data-fallback-tone="1"] {
+  --fallback-bg: #ccebe5;
+  --fallback-fg: #20574e;
+  --fallback-dark-bg: #244940;
+  --fallback-dark-fg: #bce8dc;
+}
+
+.site-icon-fallback[data-fallback-tone="2"] {
+  --fallback-bg: #f3dce4;
+  --fallback-fg: #70304d;
+  --fallback-dark-bg: #553044;
+  --fallback-dark-fg: #f3cddd;
+}
+
+.site-icon-fallback[data-fallback-tone="3"] {
+  --fallback-bg: #e5def5;
+  --fallback-fg: #514074;
+  --fallback-dark-bg: #423651;
+  --fallback-dark-fg: #e1d3f5;
+}
+
+.site-icon-fallback[data-fallback-tone="4"] {
+  --fallback-bg: #e0eacb;
+  --fallback-fg: #42562b;
+  --fallback-dark-bg: #39472c;
+  --fallback-dark-fg: #d5e6b7;
+}
+
+.site-icon-fallback[data-fallback-tone="5"] {
+  --fallback-bg: #f4e3b9;
+  --fallback-fg: #70501c;
+  --fallback-dark-bg: #514226;
+  --fallback-dark-fg: #f1dca6;
+}
+
+:is(.dark, .dark-glass) .site-icon-fallback {
+  background: var(--fallback-dark-bg, #283e5a);
+  color: var(--fallback-dark-fg, #c8dcf5);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 8%);
+}
+
+.site-icon-glyph {
+  fill: currentColor;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 54px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  letter-spacing: 0;
+}
+
+.site-icon-glyph-han-pair {
+  font-size: 64px;
+}

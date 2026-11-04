@@ -1,0 +1,37 @@
+.spotlight-input {
+  /* The global light-theme input background must not split this unified search surface. */
+  background: transparent !important;
+  box-shadow: none;
+  letter-spacing: 0;
+}
+
+.spotlight-submit {
+  color: #0369a1;
+  background: rgba(255, 255, 255, 0.36);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(148, 163, 184, 0.12);
+  transition: background-color 150ms, border-color 150ms, box-shadow 150ms, transform 150ms;
+}
+
+.spotlight-submit:hover:enabled {
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 white;
+}
+
+.dark .spotlight-submit {
+  color: #e0f2fe;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.dark .spotlight-submit:hover:enabled {
+  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.spotlight-submit:active:enabled {
+  transform: translateY(1px);
+}

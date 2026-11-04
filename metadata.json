@@ -1,0 +1,6 @@
+{
+  "name": "记个球 - JIGEQIU",
+  "description": "开源的个人网址收藏工作台，支持浏览器书签导入、文件夹整理、快捷启动与本地备份，数据保存在当前浏览器。",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

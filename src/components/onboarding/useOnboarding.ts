@@ -1,0 +1,102 @@
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { initialFlow, transition, type FlowEvent } from './flow';
+import {
+  claimWelcome, detectNewUser, mergeProgress, ONBOARDING_KEY, parseProgress, readProgress, updateProgressLocked,
+  type ProgressPatch,
+} from './progress';
+import type { OnboardingEntry, OnboardingEvent, OnboardingTask } from './types';
+
+function snapshot() {
+  try { return { eligible: detectNewUser(localStorage), ...readProgress(localStorage) }; }
+  catch { return { eligible: false, ...readProgress({ getItem() { throw new Error(); }, setItem() {}, length: 0, key() { return null; } }) }; }
+}
+
+export function useOnboarding() {
+  const [initial] = useState(snapshot);
+  const progress = useRef(initial.progress);
+  const eligible = useRef(initial.eligible);
+  const welcomeRequest = useRef(0);
+  const [flow, reduce] = useReducer(transition, initialFlow);
+  const flowRef = useRef(flow);
+  flowRef.current = flow;
+  const dispatch = useCallback((event: FlowEvent) => {
+    flowRef.current = transition(flowRef.current, event);
+    reduce(event);
+  }, []);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const [showBackup, setShowBackup] = useState(false);
+
+  const save = useCallback((patch: ProgressPatch) => {
+    progress.current = mergeProgress(progress.current, patch);
+    try {
+      void updateProgressLocked(localStorage, progress.current, navigator.locks).then(result => {
+        if (result.ok) progress.current = mergeProgress(progress.current, result.progress);
+        else setSaveFailed(true);
+      }, () => setSaveFailed(true));
+    } catch { setSaveFailed(true); }
+  }, []);
+  const exit = useCallback(() => {
+    if (flowRef.current.phase === 'welcome') save({ welcomeSkipped: true });
+    dispatch({ type: 'exit' });
+    setShowBackup(false);
+  }, [save]);
+  const start = useCallback((entry: OnboardingEntry, hasBookmarks: boolean) => {
+    welcomeRequest.current++;
+    eligible.current = false;
+    setUnavailable(false);
+    setShowBackup(false);
+    dispatch({ type: 'start', entry, hasBookmarks });
+  }, []);
+  const offerWelcome = useCallback(() => {
+    if (!eligible.current || flowRef.current.phase !== 'idle') return;
+    eligible.current = false;
+    const request = ++welcomeRequest.current;
+    try {
+      void claimWelcome(localStorage, navigator.locks).then(result => {
+        if (result.progress) progress.current = mergeProgress(progress.current, result.progress);
+        if (request !== welcomeRequest.current || flowRef.current.phase !== 'idle') return;
+        if (result.claimed) dispatch({ type: 'welcome' });
+        else if (result.error) setSaveFailed(true);
+      }, () => setSaveFailed(true));
+    } catch { setSaveFailed(true); }
+    return () => { welcomeRequest.current++; };
+  }, []);
+  const finish = useCallback((task: OnboardingTask, bookmarkId?: string) => {
+    if (flowRef.current.phase !== 'task' || flowRef.current.task !== task) return;
+    save({ tasks: { [task]: true } });
+    if ((task === 'add' || task === 'import') && !progress.current.backupReminderShown) {
+      setShowBackup(true);
+    }
+    dispatch({ type: 'success', task, bookmarkId });
+  }, [save]);
+  const onEvent = useCallback((event: OnboardingEvent) => {
+    if (event.type === 'import-success') finish('import');
+    if (event.type === 'import-stage' && event.stage === 'cancel') exit();
+  }, [finish, exit]);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key !== ONBOARDING_KEY || event.storageArea !== localStorage) return;
+      const external = parseProgress(event.newValue);
+      if (!external) return;
+      eligible.current = false;
+      progress.current = mergeProgress(progress.current, external);
+      if (flowRef.current.phase === 'welcome') dispatch({ type: 'exit' });
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+  return {
+    flow, start, exit, finish, onEvent, offerWelcome, showBackup, saveFailed, unavailable,
+    cancelTask: useCallback(() => {
+      if (flowRef.current.phase === 'task') exit();
+    }, [exit]),
+    backupDisplayed: useCallback(() => save({ backupReminderShown: true }), [save]),
+    tourComplete: useCallback(() => {
+      save({ tourCompleted: true });
+      dispatch({ type: 'tour-complete' });
+    }, [save]),
+    fail: useCallback(() => { dispatch({ type: 'exit' }); setUnavailable(true); }, []),
+    dismissNotice: useCallback(() => { setSaveFailed(false); setUnavailable(false); }, []),
+  };
+}

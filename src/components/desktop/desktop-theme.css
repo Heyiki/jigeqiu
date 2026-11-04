@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light;
+  --desktop-text: #182024;
+  --desktop-muted: #526063;
+  --desktop-panel: rgb(252 253 252 / 93%);
+  --desktop-border: rgb(35 52 54 / 18%);
+  --desktop-hover: rgb(35 52 54 / 7%);
+  --desktop-selected: rgb(2 132 199 / 10%);
+  --desktop-focus: #0284c7;
+  --desktop-input: #fafcfb;
+  --desktop-launchpad: #eff4f2;
+  --desktop-tip: #f8faf9;
+  --glass-bg: var(--desktop-panel);
+  --glass-border: var(--desktop-border);
+  --glass-inner-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
+  --glass-shadow: 0 6px 20px -6px rgb(24 32 36 / 12%);
+}
+
+:root:is(.dark, .dark-glass) {
+  color-scheme: dark;
+  --desktop-text: #f2f5f4;
+  --desktop-muted: #acb8b7;
+  --desktop-panel: rgb(33 39 41 / 95%);
+  --desktop-border: rgb(220 235 232 / 19%);
+  --desktop-hover: rgb(220 235 232 / 9%);
+  --desktop-selected: rgb(56 189 248 / 15%);
+  --desktop-focus: #7dd3fc;
+  --desktop-input: #282f31;
+  --desktop-launchpad: #1b2123;
+  --desktop-tip: #30383a;
+  --glass-inner-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --glass-shadow: 0 8px 24px -8px rgb(0 0 0 / 28%);
+}
+
+:root.reduced-transparency {
+  --desktop-panel: #fcfdfc;
+  --desktop-launchpad: #eff4f2;
+}
+
+:root.reduced-transparency:is(.dark, .dark-glass) {
+  --desktop-panel: #212729;
+  --desktop-launchpad: #1b2123;
+}
+
+.desktop-dialog-surface {
+  color: var(--desktop-text);
+}
+
+.reduced-transparency .launchpad-shell::after {
+  background: var(--desktop-launchpad);
+}
+
+.reduced-transparency :is(.liquid-glass, .liquid-glass-dock, .liquid-glass-subtle, .launchpad-shell, .desktop-folder-icon, .desktop-dialog-backdrop) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --desktop-panel: #fcfdfc;
+    --desktop-launchpad: #eff4f2;
+  }
+
+  :root:is(.dark, .dark-glass) {
+    --desktop-panel: #212729;
+    --desktop-launchpad: #1b2123;
+  }
+
+  .launchpad-shell::after {
+    background: var(--desktop-launchpad);
+  }
+
+  :root :is(.liquid-glass, .liquid-glass-dock, .liquid-glass-subtle, .launchpad-shell, .desktop-folder-icon, .desktop-dialog-backdrop) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .desktop-dialog-backdrop,
+  .launchpad-shell::after {
+    background: var(--desktop-launchpad);
+  }
+
+  :root {
+    --desktop-panel: #fcfdfc;
+    --desktop-launchpad: #eff4f2;
+  }
+
+  :root:is(.dark, .dark-glass) {
+    --desktop-panel: #212729;
+    --desktop-launchpad: #1b2123;
+  }
+}

@@ -1,0 +1,32 @@
+import type { MessageTable } from './index';
+
+export const siteIconMessages = {
+  siteIcon: { zh: '网站图标', en: 'Website icon' },
+  siteIconPreview: { zh: '图标预览', en: 'Icon preview' },
+  siteIconText: { zh: '文字图标', en: 'Text icon' },
+  siteIconSelectedImage: { zh: '已选图片', en: 'Selected image' },
+  siteIconAutomatic: { zh: '自动推荐', en: 'Automatic' },
+  siteIconImageSource: { zh: '图片来源', en: 'Image source' },
+  siteIconOnline: { zh: '在线候选', en: 'Online candidates' },
+  siteIconImageLink: { zh: '图片链接', en: 'Image URL' },
+  siteIconPageLogo: { zh: '页面 Logo', en: 'page logo' },
+  siteIconApp: { zh: '应用图标', en: 'app icon' },
+  siteIconWebsiteSource: { zh: '网站图标', en: 'website icon' },
+  siteIconChoose: { zh: '选择{source} {width}×{height}', en: 'Choose {source} {width}×{height}' },
+  siteIconDimensions: { zh: '{width}×{height}', en: '{width}×{height}' },
+  siteIconRecommended: { zh: '推荐', en: 'Recommended' },
+  siteIconEnterWebsite: { zh: '请输入有效网址', en: 'Enter a valid website URL' },
+  siteIconUsingText: { zh: '已使用文字图标', en: 'Using a text icon' },
+  siteIconSearching: { zh: '正在查找图标…', en: 'Finding icons…' },
+  siteIconNoImages: { zh: '未找到可用图片', en: 'No usable images found' },
+  siteIconFound: { zh: '找到 {count} 个图标', en: 'Found {count} icons' },
+  siteIconImageUrlLabel: { zh: '图标图片链接', en: 'Icon image URL' },
+  siteIconImageUrlExample: { zh: 'https://example.com/logo.png', en: 'https://example.com/logo.png' },
+  siteIconUseImage: { zh: '使用图片', en: 'Use image' },
+  siteIconInvalidLink: { zh: '请输入有效的 HTTP(S) 图片链接', en: 'Enter a valid HTTP(S) image URL' },
+  siteIconUnusableImage: {
+    zh: '图片无法使用，请检查格式、大小或链接',
+    en: 'This image cannot be used. Check its format, size, or URL.',
+  },
+  siteIconLoadFailed: { zh: '图片无法加载', en: 'Could not load the image' },
+} as const satisfies MessageTable;

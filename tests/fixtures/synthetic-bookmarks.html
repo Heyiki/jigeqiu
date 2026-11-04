@@ -1,0 +1,25 @@
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- Synthetic regression input, not a real browser export. -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Synthetic bookmarks</TITLE>
+<H1>Synthetic bookmarks</H1>
+<DL><p>
+  <DT><A HREF="https://example.org/?a=1&amp;b=2#first" ICON="https://never-fetch.invalid/icon.png">Root &amp; One</A>
+  <DT><H3>Same</H3>
+  <DL><p>
+    <DT><A HREF="https://example.net:8443/path#part">Nested</A>
+    <DT><H3>Empty</H3>
+    <DL><p>
+    </DL><p>
+  </DL><p>
+  <DT><H3>Same</H3>
+  <DL><p>
+  </DL><p>
+  <DT><A HREF="javascript:globalThis.__bookmarkScriptRan=true">Rejected</A>
+  <DT><A HREF="https://example.org/?a=1&amp;b=2#first">Duplicate</A>
+</DL><p>
+<SCRIPT>globalThis.__bookmarkScriptRan = true; fetch('https://never-fetch.invalid/script');</SCRIPT>
+<IMG SRC="https://never-fetch.invalid/image.png" ONERROR="globalThis.__bookmarkScriptRan=true">
+<IFRAME SRC="https://never-fetch.invalid/frame"></IFRAME>
+<LINK REL="stylesheet" HREF="https://never-fetch.invalid/style.css">
+<TEMPLATE><DL><DT><A HREF="https://never-fetch.invalid/template">Not imported</A></DL></TEMPLATE>
