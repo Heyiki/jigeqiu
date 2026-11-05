@@ -6,6 +6,9 @@ import { once } from 'node:events';
 
 // Deliberately no Vite, Express, source transforms, API handlers or SPA fallback.
 const root = resolve(process.env.STATIC_DIST ?? 'dist');
+const remote = process.env.STATIC_URL ? new URL(process.env.STATIC_URL) : null;
+const base = process.env.STATIC_BASE ?? remote?.pathname ?? '/';
+assert.match(base, /^\/(?:[a-zA-Z0-9_-]+\/)*$/);
 const types = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript',
   '.css': 'text/css', '.webp': 'image/webp', '.png': 'image/png',
@@ -15,7 +18,11 @@ const served = [];
 const server = createServer(async (request, response) => {
   try {
     const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-    const file = resolve(root, `.${pathname === '/' ? '/index.html' : pathname}`);
+    if (!pathname.startsWith(base)) {
+      response.writeHead(404).end('Not found'); return;
+    }
+    const relative = pathname.slice(base.length);
+    const file = resolve(root, relative || 'index.html');
     if (!file.startsWith(root + sep) || !['GET', 'HEAD'].includes(request.method)) {
       response.writeHead(403).end(); return;
     }
@@ -31,10 +38,12 @@ const server = createServer(async (request, response) => {
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 let browser;
 try {
-  assert.ok((await stat(resolve(root, 'index.html'))).isFile(), 'Run npm run build before this test');
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  const origin = `http://127.0.0.1:${server.address().port}`;
+  if (!remote) {
+    assert.ok((await stat(resolve(root, 'index.html'))).isFile(), 'Run npm run build before this test');
+    server.listen(0, '127.0.0.1');
+    await once(server, 'listening');
+  }
+  const origin = remote?.origin ?? `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ headless: true });
   const errors = [], badResponses = [], backendRequests = [];
   async function device(width = 1440, locksAvailable = true) {
@@ -54,7 +63,7 @@ try {
       const url = new URL(request.url());
       if (url.origin === origin && /^\/(api|src|@vite|node_modules)(\/|$)/.test(url.pathname)) backendRequests.push(url.pathname);
     });
-    await page.goto(origin);
+    await page.goto(`${origin}${base}`);
     assert.equal(await page.evaluate(() => isSecureContext && !!navigator.locks?.request), locksAvailable);
     if (locksAvailable) {
       const welcome = page.getByRole('dialog', { name: '欢迎使用记个球', exact: true });
@@ -213,9 +222,26 @@ try {
   await blocked.getByRole('alert').filter({ hasText: 'Web Locks' }).waitFor();
   assert.equal(await library(unsupported), null);
   assert.equal(await blocked.getByLabel('网站名称', { exact: true }).inputValue(), 'Unsaved draft');
-  assert.ok(served.some(path => path.startsWith('/assets/') && path.endsWith('.js')));
-  assert.ok(served.some(path => path.startsWith('/assets/') && path.endsWith('.css')));
-  assert.ok(served.some(path => path.startsWith('/wallpapers/') && path.endsWith('.webp')));
+  await page.goto(`${origin}${base}#/settings/appearance`);
+  await page.getByRole('heading', { name: '外观', exact: true }).waitFor();
+  await page.reload();
+  await page.getByRole('heading', { name: '外观', exact: true }).waitFor();
+  await page.goto(`${origin}${base}#/start`);
+  await page.getByRole('dialog', { name: '启动台', exact: true }).waitFor();
+  await page.reload();
+  await page.getByRole('dialog', { name: '启动台', exact: true }).waitFor();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Control+k');
+  const search = page.getByRole('dialog', { name: '全局搜索', exact: true });
+  await search.waitFor();
+  await search.getByRole('combobox').fill('/all');
+  await search.getByRole('option').filter({ hasText: '全部收藏管理' }).waitFor();
+  await page.keyboard.press('Escape');
+  if (!remote) {
+    assert.ok(served.some(path => path.startsWith(`${base}assets/`) && path.endsWith('.js')));
+    assert.ok(served.some(path => path.startsWith(`${base}assets/`) && path.endsWith('.css')));
+    assert.ok(served.some(path => path.startsWith(`${base}wallpapers/`) && path.endsWith('.webp')));
+  }
   assert.deepEqual(backendRequests, []);
   assert.deepEqual(badResponses, []);
   assert.deepEqual(errors, []);
