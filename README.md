@@ -8,7 +8,7 @@
 
 **简体中文** | [English](README.en.md)
 
-[在线演示](https://jigeqiu.com/) · [快速开始](#快速开始) ·
+[在线演示](https://jiawulin.github.io/) · [快速开始](#快速开始) ·
 [使用指南](#使用指南) · [自行部署](#自行部署) · [MIT License](LICENSE)
 
 ![记个球桌面：常用网站快捷方式与全局搜索](.github/images/desktop-light.jpg)
@@ -64,7 +64,8 @@
 
 ## 在线体验
 
-访问 **[jigeqiu.com](https://jigeqiu.com/)**，直接在浏览器中使用。
+访问 **[在线演示入口](https://jiawulin.github.io/)**，选择记个球进入演示站。
+原有站点 **[jigeqiu.com](https://jigeqiu.com/)** 继续保留。
 
 演示站与自行部署的站点都将收藏保存在访问者自己的浏览器中。
 不同域名、端口或浏览器配置拥有独立数据；迁移时使用导出和导入功能。
@@ -220,9 +221,26 @@ npm run preview
 部署要求：
 
 - 正式域名及局域网 IP 使用 HTTPS；本机 `localhost`、`127.0.0.1` 可使用 HTTP。受保护写入需要安全上下文、Web Locks 和可用的浏览器存储。
-- 部署到站点根路径，保留完整资源目录。直接打开 `file://` 文件不是运行方式。
+- 默认构建部署到站点根路径，保留完整资源目录。直接打开 `file://` 文件不是运行方式。
 - 页面使用 Hash 路由，例如 `/#/library`，无需应用层路由重写。
 - 开发服务器用于本机开发，生产环境使用静态文件服务器。
+
+### GitHub Pages 与子路径
+
+本仓库通过 `.github/workflows/pages.yml` 发布演示站。PR 只检查，
+`master` 推送或手动运行在检查通过后部署，产物仅包含 `dist/`，
+无需个人 Token Secret。仓库 Settings → Pages 的 Source 选择 GitHub Actions，
+并允许 `master` 部署至 `github-pages` 环境。
+
+其他子路径部署可自行构建（按实际地址修改）：
+
+```sh
+VITE_SITE_URL=https://example.com/jigeqiu/ npm run build -- --base=/jigeqiu/
+```
+
+`--base` 设置站内资源前缀，`VITE_SITE_URL` 设置 canonical 与分享地址。
+默认 `npm run build` 和 Release ZIP 仍支持站点根路径。
+回退时还原提交并重新推送 `master`，由工作流重新部署。
 
 ## 数据与隐私
 

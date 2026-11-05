@@ -9,7 +9,7 @@ build it as a static website.
 
 [简体中文](README.md) | **English**
 
-[Live Demo](https://jigeqiu.com/) · [Quick Start](#quick-start) ·
+[Live Demo](https://jiawulin.github.io/) · [Quick Start](#quick-start) ·
 [Usage](#usage) · [Self-Hosting](#self-hosting) · [MIT License](LICENSE)
 
 ![JIGEQIU desktop with website shortcuts and global search](.github/images/desktop-light.jpg)
@@ -67,7 +67,8 @@ Screenshots use demonstration bookmarks, not personal browser data.
 
 ## Try It Online
 
-Visit **[jigeqiu.com](https://jigeqiu.com/)** to use JIGEQIU in your browser.
+Visit the **[demo entry page](https://jiawulin.github.io/)** and select JIGEQIU to open the demo.
+The existing **[jigeqiu.com](https://jigeqiu.com/)** site remains available.
 
 Both the demo and self-hosted deployments keep bookmarks in each visitor's
 browser. Different domains, ports, and browser profiles have separate data.
@@ -232,9 +233,26 @@ npm run preview
 Deployment requirements:
 
 - Use HTTPS for public domains and LAN IPs; HTTP is supported on `localhost` and `127.0.0.1`. Protected writes require a secure context, Web Locks, and available browser storage.
-- Deploy at the site root and keep all asset directories. Opening files directly with `file://` is not supported.
+- Default builds deploy at the site root; keep all asset directories. Opening files directly with `file://` is not supported.
 - Pages use hash routes such as `/#/library`; application-level route rewrites are unnecessary.
 - Use the development server for local development and a static file server for production.
+
+### GitHub Pages and Subpaths
+
+`.github/workflows/pages.yml` publishes the demo. Pull requests only run checks;
+pushes to `master` and manual runs deploy `dist/` after checks pass.
+No personal Token Secret is needed. In Settings → Pages select GitHub Actions
+as the source, and allow `master` in the `github-pages` environment.
+
+For another subpath deployment, build with your actual address:
+
+```sh
+VITE_SITE_URL=https://example.com/jigeqiu/ npm run build -- --base=/jigeqiu/
+```
+
+`--base` sets the local asset prefix; `VITE_SITE_URL` sets canonical and sharing URLs.
+Default builds and Release ZIPs continue to support root deployment.
+To roll back, revert the relevant commit and push `master` to redeploy.
 
 ## Data and Privacy
 
