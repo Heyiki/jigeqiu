@@ -92,11 +92,11 @@ try {
           }));
         }, { language, appearance });
         await page.reload();
-        const attribution = page.getByRole('link', { name: 'Powered by 记个球 · jigeqiu.com', exact: true, includeHidden: true });
+        const attribution = page.getByRole('link', { name: 'Powered by 记个球 · jiawulin.github.io', exact: true, includeHidden: true });
         await attribution.waitFor({ state: 'attached' });
         await page.waitForFunction(dark => document.documentElement.classList.contains('dark') === dark, appearance === 'dark-glass');
         assert.equal(await page.getByRole('button', { name: language === 'en' ? 'Switch to Chinese' : '切换为英文', exact: true }).count(), 1);
-        assert.equal(await attribution.getAttribute('href'), 'https://jigeqiu.com/');
+        assert.equal(await attribution.getAttribute('href'), 'https://jiawulin.github.io/');
         assert.equal(await attribution.getAttribute('target'), '_blank');
         assert.match(await attribution.getAttribute('rel'), /noopener/);
         assert.match(await attribution.getAttribute('rel'), /noreferrer/);

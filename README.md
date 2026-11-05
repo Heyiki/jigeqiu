@@ -65,12 +65,18 @@
 ## 在线体验
 
 访问 **[在线演示入口](https://jiawulin.github.io/)**，选择记个球进入演示站。
-原有站点 **[jigeqiu.com](https://jigeqiu.com/)** 继续保留。
 
 演示站与自行部署的站点都将收藏保存在访问者自己的浏览器中。
 不同域名、端口或浏览器配置拥有独立数据；迁移时使用导出和导入功能。
 
 ## 快速开始
+
+> **公网或局域网部署必须使用 HTTPS，才能正常执行受保护的保存操作。**
+> 添加／编辑收藏、管理中心删除、确认 HTML／JSON 导入等操作依赖 Web Locks，
+> 用于协调多个标签页的写入，避免相互覆盖。普通 HTTP 域名或局域网 IP 下页面虽然能打开，
+> 但缺少 Web Locks 时这些操作会被明确拒绝，并不是仅提示风险后继续保存。
+> 本机通过 `http://localhost` 或 `http://127.0.0.1` 访问是例外，无需配置本机证书；
+> 仍需浏览器支持 Web Locks 并允许站点存储。
 
 ### 方式一：源码运行
 
@@ -133,7 +139,8 @@ nginx -t
 nginx -s reload
 ```
 
-本机访问可使用 HTTP；通过局域网 IP 或正式域名访问时，请配置 HTTPS。
+以上 HTTP 配置仅用于本机回环地址；通过局域网 IP 或正式域名访问时，必须配置 HTTPS，
+并将 HTTP 请求重定向到 HTTPS，否则依赖 Web Locks 的保存操作会被拒绝。
 可用发布附件 `SHA256SUMS.txt` 校验下载包。项目使用 Hash 路由，无需额外的 SPA 路由重写。
 
 ## 使用指南
@@ -225,22 +232,9 @@ npm run preview
 - 页面使用 Hash 路由，例如 `/#/library`，无需应用层路由重写。
 - 开发服务器用于本机开发，生产环境使用静态文件服务器。
 
-### GitHub Pages 与子路径
-
-本仓库通过 `.github/workflows/pages.yml` 发布演示站。PR 只检查，
-`master` 推送或手动运行在检查通过后部署，产物仅包含 `dist/`，
-无需个人 Token Secret。仓库 Settings → Pages 的 Source 选择 GitHub Actions，
-并允许 `master` 部署至 `github-pages` 环境。
-
-其他子路径部署可自行构建（按实际地址修改）：
-
-```sh
-VITE_SITE_URL=https://example.com/jigeqiu/ npm run build -- --base=/jigeqiu/
-```
-
-`--base` 设置站内资源前缀，`VITE_SITE_URL` 设置 canonical 与分享地址。
-默认 `npm run build` 和 Release ZIP 仍支持站点根路径。
-回退时还原提交并重新推送 `master`，由工作流重新部署。
+HTTPS 是使用安全上下文 API 的必要条件之一，不保证所有浏览器都提供 Web Locks，
+也不保证浏览器允许存储。不要通过移除写锁检查来解决部署问题。
+新手引导的轻量 Cookie 回退仅用于记住欢迎引导已展示，不解除收藏保存或导入的限制。
 
 ## 数据与隐私
 

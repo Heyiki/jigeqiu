@@ -68,13 +68,22 @@ Screenshots use demonstration bookmarks, not personal browser data.
 ## Try It Online
 
 Visit the **[demo entry page](https://jiawulin.github.io/)** and select JIGEQIU to open the demo.
-The existing **[jigeqiu.com](https://jigeqiu.com/)** site remains available.
 
 Both the demo and self-hosted deployments keep bookmarks in each visitor's
 browser. Different domains, ports, and browser profiles have separate data.
 Use export and import to move your bookmarks between them.
 
 ## Quick Start
+
+> **Public and LAN deployments must use HTTPS for protected save operations.**
+> Adding/editing bookmarks, deleting them in Manage, and confirming HTML/JSON
+> imports depend on Web Locks to coordinate writes across tabs and avoid
+> overwriting changes. A plain HTTP domain or LAN IP may load the page, but these
+> operations are explicitly rejected when Web Locks is unavailable; they do not
+> proceed with only a risk warning.
+> Local access through `http://localhost` or `http://127.0.0.1` is an exception and
+> needs no local certificate. The browser must still support Web Locks and allow
+> site storage.
 
 ### Option 1: Run From Source
 
@@ -137,7 +146,9 @@ nginx -t
 nginx -s reload
 ```
 
-HTTP is supported on localhost; configure HTTPS when using a LAN IP or public domain.
+The HTTP configuration above is only for local loopback access. For a LAN IP or
+public domain, configure HTTPS and redirect HTTP requests to HTTPS; otherwise,
+save operations that depend on Web Locks will be rejected.
 Use the `SHA256SUMS.txt` release attachment to verify the ZIP.
 The app uses hash routing, so no additional SPA route rewrites are required.
 
@@ -237,22 +248,11 @@ Deployment requirements:
 - Pages use hash routes such as `/#/library`; application-level route rewrites are unnecessary.
 - Use the development server for local development and a static file server for production.
 
-### GitHub Pages and Subpaths
-
-`.github/workflows/pages.yml` publishes the demo. Pull requests only run checks;
-pushes to `master` and manual runs deploy `dist/` after checks pass.
-No personal Token Secret is needed. In Settings → Pages select GitHub Actions
-as the source, and allow `master` in the `github-pages` environment.
-
-For another subpath deployment, build with your actual address:
-
-```sh
-VITE_SITE_URL=https://example.com/jigeqiu/ npm run build -- --base=/jigeqiu/
-```
-
-`--base` sets the local asset prefix; `VITE_SITE_URL` sets canonical and sharing URLs.
-Default builds and Release ZIPs continue to support root deployment.
-To roll back, revert the relevant commit and push `master` to redeploy.
+HTTPS is a prerequisite for secure-context APIs outside trusted local origins,
+not a guarantee of Web Locks support or permission to use browser storage.
+Do not remove write-lock checks to work around deployment issues.
+The lightweight onboarding cookie fallback only remembers welcome exposure;
+it does not remove bookmark-save or import restrictions.
 
 ## Data and Privacy
 
