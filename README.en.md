@@ -9,7 +9,7 @@ build it as a static website.
 
 [简体中文](README.md) | **English**
 
-[Live Demo](https://jiawulin.github.io/jigeqiu/) · [Quick Start](#quick-start) ·
+[Live Demo](https://jiawulin.github.io/) · [Quick Start](#quick-start) ·
 [Usage](#usage) · [Self-Hosting](#self-hosting) · [MIT License](LICENSE)
 
 ![JIGEQIU desktop with website shortcuts and global search](.github/images/desktop-light.jpg)
@@ -67,7 +67,7 @@ Screenshots use demonstration bookmarks, not personal browser data.
 
 ## Try It Online
 
-Visit the **[GitHub Pages demo](https://jiawulin.github.io/jigeqiu/)** to use JIGEQIU in your browser.
+Visit the **[demo entry page](https://jiawulin.github.io/)** and select JIGEQIU to open the demo.
 The existing **[jigeqiu.com](https://jigeqiu.com/)** site remains available.
 
 Both the demo and self-hosted deployments keep bookmarks in each visitor's

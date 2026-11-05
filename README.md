@@ -8,7 +8,7 @@
 
 **简体中文** | [English](README.en.md)
 
-[在线演示](https://jiawulin.github.io/jigeqiu/) · [快速开始](#快速开始) ·
+[在线演示](https://jiawulin.github.io/) · [快速开始](#快速开始) ·
 [使用指南](#使用指南) · [自行部署](#自行部署) · [MIT License](LICENSE)
 
 ![记个球桌面：常用网站快捷方式与全局搜索](.github/images/desktop-light.jpg)
@@ -64,7 +64,7 @@
 
 ## 在线体验
 
-访问 **[GitHub Pages 演示站](https://jiawulin.github.io/jigeqiu/)**，直接在浏览器中使用。
+访问 **[在线演示入口](https://jiawulin.github.io/)**，选择记个球进入演示站。
 原有站点 **[jigeqiu.com](https://jigeqiu.com/)** 继续保留。
 
 演示站与自行部署的站点都将收藏保存在访问者自己的浏览器中。
