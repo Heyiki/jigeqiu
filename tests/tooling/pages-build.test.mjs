@@ -64,7 +64,14 @@ test('root and Pages builds keep assets and sharing metadata within their deploy
       const html = await readFile(path.join(output, 'index.html'), 'utf8');
       assert.ok(html.includes(`rel="canonical" href="${site}"`));
       assert.ok(html.includes(`property="og:url" content="${site}"`));
-      assert.ok(html.includes(`href="${base}favicon.ico?v=jigeqiu-1"`));
+      assert.ok(
+        html.includes(`href="${base}favicon.ico?v=jigeqiu-a2-equator-1"`),
+      );
+      assert.ok(
+        html.includes(
+          `href="${base}apple-touch-icon.png?v=jigeqiu-a2-equator-1"`,
+        ),
+      );
       assert.ok(html.includes(`src="${base}assets/`));
       assert.ok(html.includes(`href="${base}assets/`));
       let css = '';

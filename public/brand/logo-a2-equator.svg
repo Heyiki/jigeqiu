@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <title>记个球 · 环形赤道 · A2</title>
+  <defs>
+    <mask id="bookmark" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <path fill="#fff" d="M0 0h1024v1024H0z"/>
+      <path fill="#000" d="M430 100h164v364l-82-61-82 61V100Z"/>
+    </mask>
+    <clipPath id="sphere">
+      <circle cx="512" cy="420" r="270"/>
+    </clipPath>
+  </defs>
+  <rect width="1024" height="1024" rx="120" fill="#2563EB"/>
+  <g mask="url(#bookmark)">
+    <circle cx="512" cy="420" r="270" fill="#fff"/>
+    <ellipse cx="512" cy="450" rx="269" ry="68" clip-path="url(#sphere)" stroke="#2563EB" stroke-opacity=".5" stroke-width="5"/>
+  </g>
+  <text x="512" y="860" text-anchor="middle" fill="#fff" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="140" font-weight="600">记个球</text>
+</svg>

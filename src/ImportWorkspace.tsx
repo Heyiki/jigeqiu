@@ -64,8 +64,7 @@ export default function ImportWorkspace() {
       <div className="ws">
         <header className="ws-header">
           <button className="ws-brand" onClick={() => setView('desktop')} aria-label="记个球首页">
-            <span className="ws-brand-icon"><Bookmark size={20} /></span>
-            <span>记个球 <small>JIGEQIU</small></span>
+            <img src={`${import.meta.env?.BASE_URL ?? '/'}brand/logo-a2-equator.png`} alt="" aria-hidden="true" width={40} height={40} />
           </button>
           <span className="ws-local">本机收藏</span>
           <button className="ws-button" disabled={blocked} onClick={() => setImportOpen(true)}>

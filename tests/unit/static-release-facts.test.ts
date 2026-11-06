@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import { createTranslator } from '../../src/i18n';
@@ -31,15 +32,15 @@ test('brand glyph, wordmark and accessible home label use the new identity in bo
 
 test('the page declares a versioned local favicon with genuine multi-size ICO data', () => {
   const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-  assert.match(html, /<link rel="icon" type="image\/x-icon" href="\/favicon\.ico\?v=jigeqiu-1"\s*\/>/);
+  assert.match(html, /<link rel="icon" type="image\/x-icon" href="\/favicon\.ico\?v=jigeqiu-a2-equator-1"\s*\/>/);
   const ico = readFileSync(new URL('../../public/favicon.ico', import.meta.url));
   assert.equal(ico.readUInt16LE(0), 0);
   assert.equal(ico.readUInt16LE(2), 1);
-  assert.equal(ico.readUInt16LE(4), 3);
-  for (const [index, size] of [16, 32, 48].entries()) {
+  assert.equal(ico.readUInt16LE(4), 5);
+  for (const [index, size] of [16, 32, 48, 128, 256].entries()) {
     const entry = 6 + index * 16;
-    assert.equal(ico[entry], size);
-    assert.equal(ico[entry + 1], size);
+    assert.equal(ico[entry], size === 256 ? 0 : size);
+    assert.equal(ico[entry + 1], size === 256 ? 0 : size);
     const length = ico.readUInt32LE(entry + 8);
     const offset = ico.readUInt32LE(entry + 12);
     assert.ok(offset + length <= ico.length);
@@ -47,6 +48,19 @@ test('the page declares a versioned local favicon with genuine multi-size ICO da
     assert.equal(ico.readUInt32BE(offset + 16), size);
     assert.equal(ico.readUInt32BE(offset + 20), size);
   }
+});
+
+test('brand PNG preserves the approved A2 equator artwork and touch icon has the declared dimensions', () => {
+  const logo = readFileSync(new URL('../../public/brand/logo-a2-equator.png', import.meta.url));
+  assert.equal(createHash('sha256').update(logo).digest('hex'),
+    'e42b8b3c0e2eed3ead484aee3c984f83a81b77b1982a153930f056aa3965cb2b');
+  assert.equal(logo.readUInt32BE(16), 1024);
+  assert.equal(logo.readUInt32BE(20), 1024);
+  const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  assert.match(html, /rel="apple-touch-icon" sizes="180x180" href="\/apple-touch-icon\.png\?v=jigeqiu-a2-equator-1"/);
+  const touch = readFileSync(new URL('../../public/apple-touch-icon.png', import.meta.url));
+  assert.equal(touch.readUInt32BE(16), 180);
+  assert.equal(touch.readUInt32BE(20), 180);
 });
 
 test('published wallpapers contain only the two supported built-in presets', () => {
