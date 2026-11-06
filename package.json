@@ -28,6 +28,7 @@
     "test:browser:desktop-mouse": "node tests/browser/desktop-mouse.mjs",
     "test:browser:desktop-folders": "node tests/browser/desktop-folders.mjs",
     "test:browser:launchpad": "node tests/browser/launchpad.mjs",
+    "test:browser:launchpad-first-open": "npm run build && node tests/browser/launchpad-first-open.mjs",
     "test:browser:appearance": "node tests/browser/desktop-appearance.mjs",
     "test:browser:wallpaper-cache": "node tests/browser/wallpaper-cache.mjs",
     "test:browser:custom-wallpaper": "node tests/browser/custom-wallpaper.mjs",

@@ -39,14 +39,15 @@ import { preferenceSaveError } from './services/preference-save-error';
 import { BookmarkTrashView } from './components/account/BookmarkTrashView';
 import { LibraryChangeNotice } from './components/common/LibraryChangeNotice';
 import { commitAndRefresh } from './services/library-mutation';
-import { resolveLocale } from './i18n';
+import { createTranslator, resolveLocale } from './i18n';
 import { useOnboarding } from './components/onboarding/useOnboarding';
 import { OnboardingPanel } from './components/onboarding/OnboardingPanel';
 import { TaskHint } from './components/onboarding/TaskHint';
 import type { OnboardingEntry, OnboardingTaskContext } from './components/onboarding/types';
 
 // Original visual prototype, retained while features are connected in small slices.
-const Launchpad = React.lazy(() => import('./components/desktop/Launchpad').then(module => ({ default: module.Launchpad })));
+const loadLaunchpad = () => import('./components/desktop/Launchpad').then(module => ({ default: module.Launchpad }));
+const Launchpad = React.lazy(loadLaunchpad);
 
 export default function PrototypeApp() {
   // Capture first-use eligibility before storage getters initialize defaults.
@@ -62,6 +63,7 @@ export default function PrototypeApp() {
   const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => storage.getSearchEngines());
   const [submissions, setSubmissions] = useState<Submission[]>(() => storage.getSubmissions());
   const [settings, setSettings] = useState<UserSettings>(() => storage.getUserSettings());
+  const t = createTranslator(settings.language);
   const [libraryChanged, setLibraryChanged] = useState(false);
   useEffect(() => {
     const check = () => {
@@ -132,6 +134,17 @@ export default function PrototypeApp() {
   const [quickAddInitialUrl, setQuickAddInitialUrl] = useState<string | undefined>(undefined);
   const [quickAddFolderId, setQuickAddFolderId] = useState<string | undefined>(undefined);
   const isLaunchpadOpen = route.page === 'launchpad';
+  useEffect(() => {
+    if (route.page !== 'desktop') return;
+    // Warm code and pinyin dependencies without mounting the drawer or building its index.
+    const warm = () => { void loadLaunchpad().catch(() => {}); };
+    if (typeof window.requestIdleCallback === 'function') {
+      const job = window.requestIdleCallback(warm, { timeout: 1500 });
+      return () => window.cancelIdleCallback(job);
+    }
+    const timer = window.setTimeout(warm, 200);
+    return () => window.clearTimeout(timer);
+  }, [route.page]);
   const [launchpadBrowse, setLaunchpadBrowse] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -980,7 +993,7 @@ export default function PrototypeApp() {
       )}
 
       {/* macOS Launchpad (应用抽屉 / 启动台) */}
-      {isLaunchpadOpen && <React.Suspense fallback={<div role="status" className="fixed inset-0 z-[1200] flex items-center justify-center bg-[var(--desktop-launchpad)] text-sm text-[var(--desktop-text)]">正在打开启动台…</div>}>
+      {isLaunchpadOpen && <React.Suspense fallback={<div role="status" className="fixed inset-0 z-[1200] flex items-center justify-center bg-[var(--desktop-launchpad)] text-sm text-[var(--desktop-text)]">{t('launchpadLoading')}</div>}>
       <Launchpad
         onboarding={taskContext?.task === 'pin' ? taskContext : undefined}
         onRevealDesktop={revealPinnedBookmark}

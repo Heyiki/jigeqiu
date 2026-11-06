@@ -8,6 +8,7 @@ export const navigationMessages = {
   navigationHomeLabel: { zh: '记个球首页', en: 'JIGEQIU home' },
   primaryNavigation: { zh: '一级导航', en: 'Primary navigation' },
   desktopNavigation: { zh: '桌面', en: 'Desktop' },
+  launchpadLoading: { zh: '正在打开启动台…', en: 'Opening Launchpad…' },
   managementNavigation: { zh: '管理中心', en: 'Manage' },
   switchToChinese: { zh: '切换为中文', en: 'Switch to Chinese' },
   switchToEnglish: { zh: '切换为英文', en: 'Switch to English' },
