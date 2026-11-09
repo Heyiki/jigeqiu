@@ -26,13 +26,21 @@ export function SiteIconPicker({ url, title, value, onChange, language = 'zh' }:
   const [draft, setDraft] = useState('');
   const [verified, setVerified] = useState('');
   const [linkError, setLinkError] = useState<'siteIconUnusableImage' | 'siteIconLoadFailed' | ''>('');
+  const [previewURL, setPreviewURL] = useState('');
   const choice = useRef(value);
   const change = useRef(onChange);
   choice.current = value;
   change.current = onChange;
   const thirdParty = useSyncExternalStore(subscribeIconPreferences, getThirdPartyIconsEnabled, () => false);
   let pageURL = '';
-  try { pageURL = normalizeBookmarkUrl(url); } catch { /* Empty/invalid input makes no request. */ }
+  try {
+    const normalized = normalizeBookmarkUrl(url);
+    const host = new URL(normalized).hostname;
+    if (host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host) || host.startsWith('[') ||
+        /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})$/i.test(host)) {
+      pageURL = normalized;
+    }
+  } catch { /* Empty/invalid input makes no request. */ }
   const active = value.iconMode !== 'text' && (value.iconMode === 'auto' || (expanded && tab === 'online'));
 
   useEffect(() => {
@@ -42,9 +50,12 @@ export function SiteIconPicker({ url, title, value, onChange, language = 'zh' }:
   }, [pageURL]);
 
   useEffect(() => {
-    if (!pageURL || !active) return;
+    setPreviewURL('');
+    if (!pageURL) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
+      setPreviewURL(pageURL);
+      if (!active) return;
       setResult({ url: pageURL, items: [], loading: true });
       const found = new Map<string, SiteIconCandidate>();
       const publish = () => {
@@ -97,7 +108,7 @@ export function SiteIconPicker({ url, title, value, onChange, language = 'zh' }:
   return <fieldset className="min-w-0" aria-label={t('siteIcon')}>
     <button type="button" aria-expanded={expanded} onClick={() => setExpanded(open => !open)}
       className="flex w-full items-center gap-3 rounded-lg border border-slate-200/70 bg-black/[0.025] p-2.5 text-left dark:border-white/10 dark:bg-white/5">
-      <FaviconImage url={pageURL} title={title || t('siteIconPreview')} icon={value.icon} iconMode={value.iconMode} size="md" />
+      <FaviconImage url={previewURL === pageURL ? previewURL : ''} title={title || t('siteIconPreview')} icon={value.icon} iconMode={value.iconMode} size="md" />
       <span className="min-w-0 flex-1 text-xs font-medium">{t('siteIcon')}
         <span className="mt-1 block font-normal text-slate-500 dark:text-slate-400">
           {value.iconMode === 'text' ? t('siteIconText') : value.iconMode === 'custom' ? t('siteIconSelectedImage') : t('siteIconAutomatic')}

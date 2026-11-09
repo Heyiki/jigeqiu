@@ -1,0 +1,223 @@
+.extension-privacy-page {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 40px max(24px, calc((100% - 760px) / 2)) 28px;
+  background: #fff;
+  color: #20272c;
+  font:
+    15px/1.75 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.extension-privacy-page header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.extension-privacy-page h1 {
+  margin: 0;
+  font-size: 24px;
+}
+.extension-privacy-page header p,
+.extension-privacy-page .privacy-version {
+  margin: 0;
+  color: #58616a;
+  font-size: 13px;
+}
+.extension-privacy-page h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.extension-privacy-page h3 {
+  margin: 24px 0 6px;
+  font-size: 16px;
+}
+.extension-privacy-page p {
+  margin: 8px 0 16px;
+}
+.extension-privacy-page a {
+  color: #006c8b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.privacy-summary {
+  padding-left: 22px;
+  margin: 24px 0;
+}
+.privacy-summary li {
+  margin-bottom: 12px;
+}
+.privacy-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.extension-privacy-page button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid #bec7cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #20272c;
+  cursor: pointer;
+  font: inherit;
+}
+.extension-privacy-page button:hover {
+  background: #f0f5f6;
+}
+.extension-privacy-page .privacy-primary {
+  background: #006c8b;
+  border-color: #006c8b;
+  color: #fff;
+}
+.extension-privacy-page .privacy-primary:hover {
+  background: #005974;
+}
+.extension-privacy-page :focus-visible {
+  outline: 3px solid #2c8499;
+  outline-offset: 3px;
+}
+.extension-privacy-page [role='alert'] {
+  color: #b12430;
+}
+.privacy-declined {
+  margin-top: 24px;
+  border-top: 1px solid #dce3e6;
+  padding-top: 16px;
+}
+.privacy-return {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+.extension-privacy-page footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  color: #58616a;
+  font-size: 13px;
+}
+.extension-privacy-launcher {
+  position: fixed;
+  z-index: 40;
+  bottom: 60px;
+  left: 16px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #bec7cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #006c8b;
+}
+.extension-privacy-launcher:hover {
+  background: #eef6f8;
+}
+.extension-privacy-dialog {
+  box-sizing: border-box;
+  margin: auto;
+  width: min(760px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid #bec7cc;
+  border-radius: 8px;
+  background: #fff;
+  color: #20272c;
+  font:
+    14px/1.75 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.extension-privacy-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.extension-privacy-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.extension-privacy-dialog > header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dce3e6;
+}
+.extension-privacy-dialog h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.extension-privacy-dialog h3 {
+  margin: 20px 0 6px;
+  font-size: 15px;
+}
+.extension-privacy-dialog p {
+  margin: 6px 0 14px;
+}
+.extension-privacy-dialog > header button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #20272c;
+  cursor: pointer;
+}
+.extension-privacy-dialog > header button:hover {
+  background: #eef6f8;
+}
+.extension-privacy-dialog :focus-visible {
+  outline: 2px solid #2c8499;
+  outline-offset: -2px;
+}
+.privacy-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 24px 24px;
+}
+.extension-privacy-launcher:focus-visible {
+  outline: 3px solid #2c8499;
+  outline-offset: 3px;
+}
+.extension-remote-image-notice {
+  margin: 8px 0;
+  color: #64717c;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .extension-privacy-page {
+    padding: 24px 20px;
+  }
+  .privacy-actions {
+    justify-content: stretch;
+  }
+  .privacy-actions button {
+    flex: 1 1 140px;
+  }
+}

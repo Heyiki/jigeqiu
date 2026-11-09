@@ -1,13 +1,18 @@
 {
   "name": "jigeqiu-web",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
     "build": "vite build",
+    "build:extension": "node extension/scripts/build.mjs",
+    "build:extension:migrate": "node extension/scripts/build.mjs --legacy-id",
+    "package:extension": "node extension/scripts/package.mjs",
+    "test:extension": "node --import tsx --test extension/tests/*.test.mjs",
+    "test:browser:extension": "npm run build:extension && node extension/tests/browser.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "eslint . --max-warnings=0",
@@ -52,7 +57,7 @@
     "test:browser:mutation-entrypoints": "node tests/browser/mutation-entrypoints.mjs",
     "test:browser:collections": "node tests/browser/collections.mjs",
     "test:browser:onboarding": "node tests/browser/onboarding.mjs",
-    "check": "npm run test && npm run test:tooling && npm run test:contracts && npm run lint && npm run typecheck && npm run format:check && npm run build"
+    "check": "npm run test && npm run test:extension && npm run test:tooling && npm run test:contracts && npm run lint && npm run typecheck && npm run format:check && npm run build"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -78,6 +83,7 @@
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "eslint": "10.13.0",
+    "fflate": "0.8.2",
     "globals": "16.5.0",
     "prettier": "3.9.10",
     "tailwindcss": "^4.3.3",
