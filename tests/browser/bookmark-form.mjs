@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
-import { createServer } from 'vite';
+import { createServer, preview } from 'vite';
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
-const server = await createServer({ server: { host: '127.0.0.1', port: 0 } });
+const useDist = process.env.BOOKMARK_FORM_DIST === 'true';
+const server = useDist
+  ? await preview({ preview: { host: '127.0.0.1', port: 0 } })
+  : await createServer({ server: { host: '127.0.0.1', port: 0 } });
 const screenshots = process.env.SCREENSHOT_DIR ?? 'test-results/screenshots';
 let browser;
 try {
-  await server.listen();
+  if (!useDist) await server.listen();
   browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: { width: 1280, height: 1000 } });
   await context.route('https://**/*', route => route.abort());
@@ -39,6 +42,49 @@ try {
   };
   await page.getByTitle('添加收藏', { exact: true }).first().click();
   await checkFields();
+  const urlInput = dialog.getByLabel('网址 URL', { exact: true });
+  const titleInput = dialog.getByLabel('网站名称', { exact: true });
+  let releaseSlow;
+  let slowStarted;
+  const started = new Promise(resolve => { slowStarted = resolve; });
+  const slow = new Promise(resolve => { releaseSlow = resolve; });
+  await context.route('https://title.example.test/**', async route => {
+    if (route.request().resourceType() !== 'fetch') return route.abort();
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/slow') { slowStarted(); await slow; }
+    if (path === '/manual-slow') await new Promise(resolve => setTimeout(resolve, 700));
+    await route.fulfill({
+      contentType: 'text/html',
+      headers: { 'access-control-allow-origin': '*' },
+      body: `<title>${path === '/slow' ? '旧文章' : '原始文章'} - 测试站</title>${path === '/article' ? '<meta property="og:site_name" content="测试站">' : ''}`,
+    }).catch(() => {});
+  });
+  await urlInput.fill('https://title.example.test/article');
+  await page.waitForFunction(() => document.querySelector('#bookmark-title')?.value === '测试站');
+  await urlInput.fill('https://title.example.test/slow');
+  await started;
+  await urlInput.fill('https://title.example.test/new');
+  await page.waitForFunction(() => document.querySelector('#bookmark-title')?.value === '原始文章 - 测试站');
+  releaseSlow();
+  await page.waitForTimeout(150);
+  assert.equal(await titleInput.inputValue(), '原始文章 - 测试站', 'A stale response cannot overwrite the new page title');
+  const manualStarted = page.waitForRequest(request =>
+    request.url() === 'https://title.example.test/manual-slow' && request.resourceType() === 'fetch');
+  await urlInput.fill('https://title.example.test/manual-slow');
+  await manualStarted;
+  await titleInput.fill('手动命名');
+  await page.waitForTimeout(850);
+  assert.equal(await titleInput.inputValue(), '手动命名', 'An in-flight result cannot overwrite manual input');
+  await urlInput.fill('https://title.example.test/manual');
+  await page.waitForTimeout(650);
+  assert.equal(await titleInput.inputValue(), '手动命名', 'Manual titles survive URL changes');
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await page.getByTitle('添加收藏', { exact: true }).first().click();
+  await urlInput.fill('https://blocked.example.test/');
+  await page.waitForTimeout(650);
+  assert.equal(await titleInput.inputValue(), 'Blocked', 'CORS failure retains the immediate domain fallback');
+  await dialog.getByRole('button', { name: '取消', exact: true }).click();
+  await page.getByTitle('添加收藏', { exact: true }).first().click();
   await dialog.getByLabel('网址 URL', { exact: true }).fill('https://unsplash.example.test/');
   await dialog.getByLabel('网站名称', { exact: true }).fill('Unsplash');
   const location = dialog.getByRole('button', { name: /^收藏位置 / });
@@ -127,8 +173,9 @@ try {
   await checkFields();
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   assert.deepEqual(errors, []);
-  console.log('PASS unified add/edit fields, keyword tokens, expandable folder tree, Escape, independent pins, inline folder creation and desktop/mobile screenshots');
+  console.log(`PASS ${useDist ? 'dist' : 'dev'} original site_name/title, stale/manual protection, CORS fallback, unified add/edit fields, folder tree, pins, keywords and desktop/mobile screenshots`);
 } finally {
   await browser?.close();
-  await server.close();
+  if (useDist) await new Promise((resolve, reject) => server.httpServer.close(error => error ? reject(error) : resolve()));
+  else await server.close();
 }

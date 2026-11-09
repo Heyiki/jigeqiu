@@ -3,6 +3,7 @@ import { AlertTriangle, Download, Edit, ExternalLink, Link, Pin } from 'lucide-r
 import type { Bookmark, Folder } from '../../types';
 import { normalizeBookmarkUrl } from '../../services/bookmark-input';
 import { bookmarkFormInput, defaultBookmarkTitle, findDuplicateBookmark } from '../../services/bookmark-form';
+import { fetchBookmarkTitle } from '../../services/bookmark-title';
 import { withCollectionMutation } from '../../services/collection-mutation';
 import { preferenceSaveError } from '../../services/preference-save-error';
 import { Modal } from './Modal';
@@ -64,6 +65,7 @@ function BookmarkDialogSession({
   const [conflict, setConflict] = useState(false);
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const titleRequest = useRef<AbortController | null>(null);
   const mounted = useRef(true);
   const downloads = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => {
@@ -77,6 +79,18 @@ function BookmarkDialogSession({
       downloads.current.clear();
     };
   }, []);
+  useEffect(() => {
+    if (bookmark || titleEdited.current) return;
+    const controller = new AbortController();
+    titleRequest.current = controller;
+    const timer = setTimeout(() => {
+      void fetchBookmarkTitle(url, controller.signal).then(suggestion => {
+        if (suggestion && !controller.signal.aborted && mounted.current &&
+            !titleEdited.current && !pending.current) setTitle(suggestion);
+      });
+    }, 500);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [url, bookmark]);
   const duplicate = findDuplicateBookmark(existingBookmarks, url, bookmark?.id);
   let validUrl = false;
   try { normalizeBookmarkUrl(url); validUrl = true; } catch { /* Keep URL guidance until validation succeeds. */ }
@@ -85,6 +99,7 @@ function BookmarkDialogSession({
     event.preventDefault();
     if (pending.current || !mounted.current) return;
     pending.current = true;
+    titleRequest.current?.abort();
     setBusy(true);
     setFailure(null);
     setConflict(false);
@@ -165,6 +180,7 @@ function BookmarkDialogSession({
             value={url} placeholder={t('websiteUrlExample')} className={`${inputClass} pl-9`}
             onChange={event => {
               const next = event.target.value;
+              titleRequest.current?.abort();
               setUrl(next); setIcon({ iconMode: 'auto' });
               if (!titleEdited.current) setTitle(defaultBookmarkTitle(next));
             }} />
@@ -184,7 +200,7 @@ function BookmarkDialogSession({
       <div>
         <label htmlFor="bookmark-title" className="mb-1.5 block text-xs font-semibold">{t('websiteName')} <span className="text-rose-500">*</span></label>
         <input id="bookmark-title" data-onboarding="add-title" aria-label={t('websiteName')} required value={title} placeholder={t('websiteNameExample')} className={inputClass}
-          onChange={event => { titleEdited.current = true; setTitle(event.target.value); }} />
+          onChange={event => { titleEdited.current = true; titleRequest.current?.abort(); setTitle(event.target.value); }} />
       </div>
       <SiteIconPicker url={url} title={title} value={icon} language={language} onChange={value => { if (!pending.current) setIcon(value); }} />
       <FolderTreeSelect folders={folders} value={folderId} onChange={setFolderId}

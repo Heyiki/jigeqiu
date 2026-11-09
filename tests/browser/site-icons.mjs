@@ -128,7 +128,15 @@ try {
     assert.equal(await icon.locator('text[data-half="left"]').textContent(), '文');
     const halfRects = await icon.locator('clipPath rect').evaluateAll(elements => elements.map(e => [e.getAttribute('x'), e.getAttribute('width')]));
     assert.deepEqual(halfRects, [['0', '32'], ['32', '32']]);
-    assert.equal(await icon.locator('svg').evaluate(e => getComputedStyle(e).fontSize), '64px');
+    const geometry = await icon.locator('svg').evaluate(svg => {
+      const fontSize = parseFloat(getComputedStyle(svg).fontSize);
+      const centers = [...svg.querySelectorAll('text')].map(text => Number(text.getAttribute('x')));
+      return { fontSize, centers };
+    });
+    assert.equal(geometry.fontSize, 52, 'Two-Han glyphs leave more breathing room inside the circle');
+    assert.deepEqual(geometry.centers, [5.2, 58.8]);
+    assert.ok(Math.abs((geometry.centers[0] + geometry.fontSize / 2) / geometry.fontSize - 0.6) < 0.001);
+    assert.ok(Math.abs((64 - geometry.centers[1] + geometry.fontSize / 2) / geometry.fontSize - 0.6) < 0.001);
     assert.equal(Math.round((await icon.boundingBox()).width), px);
     assert.equal(Math.round((await icon.boundingBox()).height), px);
   }
@@ -337,7 +345,7 @@ try {
     }
   }
   assert.deepEqual(errors, []);
-  console.log('PASS: circular edge-clipped half-Han at every size, six stable day/night palettes with 4.5:1 contrast, reversible theme switching, original shapes/pixels/transparent backgrounds, visibility-gated loads, explicit precedence, shared and persistent blob/negative cache, remote-offline reuse, refresh failure retention, opt-in privacy, non-destructive clear, external SVG/CORS metadata-only fallback, corrupted-cache recovery, desktop/Dock/Launchpad/library integration and screenshots');
+  console.log('PASS: circular 60%-width Han glyphs at every size, six stable day/night palettes with 4.5:1 contrast, reversible theme switching, original shapes/pixels/transparent backgrounds, visibility-gated loads, explicit precedence, shared and persistent blob/negative cache, remote-offline reuse, refresh failure retention, opt-in privacy, non-destructive clear, external SVG/CORS metadata-only fallback, corrupted-cache recovery, desktop/Dock/Launchpad/library integration and screenshots');
 } finally {
   await browser?.close();
   await server.close();

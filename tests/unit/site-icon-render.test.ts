@@ -8,11 +8,13 @@ const render = (title: string, size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'lg', ur
   renderToStaticMarkup(React.createElement(FaviconImage, { title, size, url, iconBg: '#ff00ff' }));
 
 for (const size of ['xs', 'sm', 'md', 'lg', 'xl'] as const) {
-  test(`Chinese fallback uses the first right half and second left half at ${size}`, () => {
+  test(`Chinese fallback exposes more of the inner sides of both glyphs at ${size}`, () => {
     const markup = render('中文工具', size);
     assert.match(markup, /data-fallback-kind="han-pair"/);
     assert.match(markup, /data-half="right"[^>]*>中<\/text>/);
     assert.match(markup, /data-half="left"[^>]*>文<\/text>/);
+    assert.match(markup, /<text x="5.2" y="32"/);
+    assert.match(markup, /<text x="58.8" y="32"/);
     assert.equal((markup.match(/<clipPath /g) ?? []).length, 2);
     assert.match(markup, /class="site-icon-glyph site-icon-glyph-han-pair"/);
     assert.match(markup, /<rect x="0" y="0" width="32" height="64"/);

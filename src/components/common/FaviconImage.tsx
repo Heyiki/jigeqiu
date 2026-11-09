@@ -25,9 +25,9 @@ function TextIcon({ title, url }: { title: string; url: string }) {
             <clipPath id={`${id}-right`}><rect x="0" y="0" width="32" height="64" /></clipPath>
             <clipPath id={`${id}-left`}><rect x="32" y="0" width="32" height="64" /></clipPath>
           </defs>
-          {/* Full glyphs clipped to the specified halves, with identical geometry at every size. */}
-          <text x="0" y="32" clipPath={`url(#${id}-right)`} data-half="right">{fallback.first}</text>
-          <text x="64" y="32" clipPath={`url(#${id}-left)`} data-half="left">{fallback.second}</text>
+          {/* A 5.2-unit inset exposes 60% of each 52-unit glyph toward the center. */}
+          <text x="5.2" y="32" clipPath={`url(#${id}-right)`} data-half="right">{fallback.first}</text>
+          <text x="58.8" y="32" clipPath={`url(#${id}-left)`} data-half="left">{fallback.second}</text>
         </> : <text x="32" y="32">{fallback.text}</text>}
       </svg>}
   </div>;
