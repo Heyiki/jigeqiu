@@ -1932,7 +1932,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
               />
 
               {/* Notice Box about {query} */}
-              <div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
+              <div className="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 dark:text-amber-200 leading-relaxed space-y-1 select-text cursor-text">
                 <div className="font-bold flex items-center gap-1">
                   <span>{t('managerEngineQueryTipWithIcon', { query: '{query}' })}</span>
                 </div>
