@@ -1,6 +1,8 @@
 node_modules/
 build/
 dist/
+dist-extension/
+release-extension/
 release-assets/
 coverage/
 test-results/
@@ -12,5 +14,6 @@ test-results/
 
 # Local development references; keep out of source snapshots.
 /docs/
+/extension/docs/
 /AGENTS.md
 /CONTRIBUTING.md

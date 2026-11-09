@@ -3,7 +3,14 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'dist-extension/**',
+      'release-extension/**',
+      'build/**',
+      'coverage/**',
+    ],
   },
   {
     files: ['**/*.{js,mjs,cjs}'],
@@ -20,7 +27,7 @@ export default [
     },
   },
   {
-    files: ['tests/browser/**/*.mjs'],
+    files: ['tests/browser/**/*.mjs', 'extension/tests/browser.mjs'],
     languageOptions: {
       globals: globals.browser,
     },
