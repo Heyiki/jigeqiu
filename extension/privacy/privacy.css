@@ -126,6 +126,79 @@
 .extension-privacy-launcher:hover {
   background: #eef6f8;
 }
+.extension-privacy-dialog {
+  box-sizing: border-box;
+  margin: auto;
+  width: min(760px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid #bec7cc;
+  border-radius: 8px;
+  background: #fff;
+  color: #20272c;
+  font:
+    14px/1.75 system-ui,
+    sans-serif;
+  letter-spacing: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.extension-privacy-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.extension-privacy-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.extension-privacy-dialog > header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dce3e6;
+}
+.extension-privacy-dialog h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.extension-privacy-dialog h3 {
+  margin: 20px 0 6px;
+  font-size: 15px;
+}
+.extension-privacy-dialog p {
+  margin: 6px 0 14px;
+}
+.extension-privacy-dialog > header button {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #20272c;
+  cursor: pointer;
+}
+.extension-privacy-dialog > header button:hover {
+  background: #eef6f8;
+}
+.extension-privacy-dialog :focus-visible {
+  outline: 2px solid #2c8499;
+  outline-offset: -2px;
+}
+.privacy-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 24px 24px;
+}
 .extension-privacy-launcher:focus-visible {
   outline: 3px solid #2c8499;
   outline-offset: 3px;

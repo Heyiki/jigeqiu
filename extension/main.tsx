@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { PrivacyPage } from './privacy/PrivacyPage';
+import { PrivacyDialog } from './privacy/PrivacyDialog';
 import { PRIVACY_KEY, PRIVACY_VERSION } from './privacy/content';
 import './styles.css';
 
@@ -17,6 +18,7 @@ function acknowledged() {
 
 function ExtensionApp() {
   const [ready, setReady] = useState(acknowledged);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   useEffect(() => {
     const changed = (event: StorageEvent) => {
       if (event.key === PRIVACY_KEY || event.key === null)
@@ -44,14 +46,16 @@ function ExtensionApp() {
       <Suspense fallback={<p role="status">正在打开工作台…</p>}>
         <App />
       </Suspense>
-      <a
+      <button
+        type="button"
         className="extension-privacy-launcher"
-        href={`?privacy=1${location.hash}`}
+        onClick={() => setPrivacyOpen(true)}
         aria-label="隐私说明"
         title="隐私说明"
       >
         <ShieldCheck size={19} />
-      </a>
+      </button>
+      {privacyOpen && <PrivacyDialog onClose={() => setPrivacyOpen(false)} />}
     </>
   );
 }

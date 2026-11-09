@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, mkdir, readFile, rm } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,7 +33,6 @@ async function launch(directory) {
     ) {
       await route.fulfill({
         contentType: 'image/png',
-        headers: { 'Access-Control-Allow-Origin': '*' },
         body: await readFile(path.join(extension, 'icons/icon-128.png')),
       });
     } else await route.abort();
@@ -45,6 +44,7 @@ try {
   const page = await context.newPage();
   const errors = [];
   const cspErrors = [];
+  const corsErrors = [];
   const remoteRequests = [];
   context.on('request', (request) => {
     if (/^https?:/.test(request.url()))
@@ -54,6 +54,8 @@ try {
   page.on('console', (message) => {
     if (/content security policy|violates.*directive/i.test(message.text()))
       cspErrors.push(message.text());
+    if (/blocked by CORS|Access-Control-Allow-Origin/i.test(message.text()))
+      corsErrors.push(message.text());
   });
   page.setDefaultTimeout(15000);
   await page.goto('chrome://newtab/');
@@ -99,18 +101,59 @@ try {
   await page.getByRole('button', { name: '暂不使用', exact: true }).click();
   assert.equal(await page.getByRole('banner').count(), 0);
   await page.getByRole('button', { name: '返回隐私告知', exact: true }).click();
-  await page.getByRole('link', { name: '完整隐私说明', exact: true }).click();
+  const beforePrivacyURL = page.url();
+  await page.getByRole('button', { name: '完整隐私说明', exact: true }).click();
+  const privacyDialog = page.getByRole('dialog', {
+    name: '隐私说明',
+    exact: true,
+  });
+  await privacyDialog.waitFor();
+  assert.equal(page.url(), beforePrivacyURL);
   await page.getByRole('heading', { name: '隐私说明', exact: true }).waitFor();
   await page.screenshot({
     path: path.join(screenshots, 'privacy-policy-desktop.png'),
     fullPage: true,
   });
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.equal(
+    await privacyDialog.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return (
+        rect.left >= 0 &&
+        rect.right <= innerWidth &&
+        rect.top >= 0 &&
+        rect.bottom <= innerHeight
+      );
+    }),
+    true,
+  );
+  await page.screenshot({
+    path: path.join(screenshots, 'privacy-policy-mobile.png'),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   assert.deepEqual(
     remoteRequests,
     [],
     'Privacy document uses no external requests',
   );
-  await page.getByRole('link', { name: '返回', exact: true }).click();
+  await privacyDialog.locator('.privacy-dialog-body').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await privacyDialog
+    .getByRole('button', { name: '关闭隐私说明', exact: true })
+    .click();
+  await privacyDialog.waitFor({ state: 'hidden' });
+  assert.equal(await page.getByRole('banner').count(), 0);
+  await page.getByRole('button', { name: '完整隐私说明', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await privacyDialog.waitFor({ state: 'hidden' });
+  assert.equal(
+    await page
+      .getByRole('button', { name: '完整隐私说明', exact: true })
+      .evaluate((element) => element === document.activeElement),
+    true,
+  );
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
@@ -155,9 +198,9 @@ try {
     0,
   );
   await page.getByRole('button', { name: '暂时跳过', exact: true }).click();
-  await page.getByRole('link', { name: '隐私说明', exact: true }).click();
+  await page.getByRole('button', { name: '隐私说明', exact: true }).click();
   await page.getByRole('heading', { name: '隐私说明', exact: true }).waitFor();
-  await page.getByRole('link', { name: '返回', exact: true }).click();
+  await page.getByRole('button', { name: '关闭隐私说明', exact: true }).click();
   await page.getByRole('banner').waitFor();
   await page.keyboard.press('Control+Shift+Enter');
   const dialog = page.getByRole('dialog', { name: '添加收藏', exact: true });
@@ -167,6 +210,12 @@ try {
   await dialog
     .getByLabel('网站名称', { exact: true })
     .fill('Extension smoke test');
+  assert.equal(
+    await dialog
+      .getByRole('button', { name: '授权此站点', exact: true })
+      .count(),
+    0,
+  );
   const picker = dialog.getByRole('group', { name: '网站图标', exact: true });
   await picker.getByRole('button', { name: /网站图标/ }).click();
   const online = picker.getByRole('tabpanel', {
@@ -201,12 +250,8 @@ try {
     `Original icon discovery must request website icons: ${JSON.stringify(remoteRequests)}`,
   );
   assert.ok(
-    remoteRequests.some(
-      (request) =>
-        request.url === 'https://manual-image.test/icon.png' &&
-        request.type === 'fetch',
-    ),
-    'Original manual image validation must be retained',
+    remoteRequests.every((request) => request.type !== 'fetch'),
+    'Unrequested optional host permissions must prevent all icon and title fetches',
   );
   remoteRequests.length = 0;
   await dialog.getByRole('button', { name: '添加收藏', exact: true }).click();
@@ -296,6 +341,7 @@ try {
   await page.getByRole('banner').waitFor();
   assert.deepEqual(errors, []);
   assert.deepEqual(cspErrors, []);
+  assert.deepEqual(corsErrors, []);
   await context.close();
   context = undefined;
   const copy = await mkdtemp(path.join(os.tmpdir(), 'jigeqiu-extension-copy-'));
@@ -318,8 +364,76 @@ try {
   } finally {
     await rm(copy, { recursive: true, force: true });
   }
+  // A test-only installation fixture supplies actual browser host access.
+  // Production ZIPs remain optional-only; never add these grants to the source manifest.
+  const grantedCopy = await mkdtemp(
+    path.join(os.tmpdir(), 'jigeqiu-extension-granted-'),
+  );
+  try {
+    await cp(extension, grantedCopy, { recursive: true });
+    await writeFile(
+      path.join(grantedCopy, 'manifest.json'),
+      JSON.stringify({
+        ...manifest,
+        host_permissions: ['https://example.org/*'],
+      }),
+    );
+    context = await launch(grantedCopy);
+    const grantedPage = await context.newPage();
+    const grantedRequests = [];
+    context.on('request', (request) => {
+      if (request.url().startsWith('https://example.org/'))
+        grantedRequests.push(request.resourceType());
+    });
+    await grantedPage.goto(`chrome-extension://${runtime.id}/index.html`);
+    await grantedPage.getByRole('banner').waitFor();
+    await grantedPage.keyboard.press('Control+Shift+Enter');
+    const grantedDialog = grantedPage.getByRole('dialog', {
+      name: '添加收藏',
+      exact: true,
+    });
+    await grantedDialog
+      .getByLabel('网址 URL', { exact: true })
+      .fill('https://example.org/permission-test');
+    await grantedDialog
+      .getByLabel('网站名称', { exact: true })
+      .fill('Granted icon');
+    const grantedPicker = grantedDialog.getByRole('group', {
+      name: '网站图标',
+      exact: true,
+    });
+    await grantedPicker.getByRole('button', { name: /网站图标/ }).click();
+    await grantedPicker
+      .getByRole('tabpanel', { name: '在线候选', exact: true })
+      .getByRole('button')
+      .first()
+      .waitFor();
+    assert.ok(
+      grantedRequests.includes('fetch'),
+      'Granted sites can fetch images without CORS response headers',
+    );
+    await grantedPage.screenshot({
+      path: path.join(screenshots, 'site-permission-desktop.png'),
+      fullPage: true,
+    });
+    await grantedPage.setViewportSize({ width: 390, height: 844 });
+    assert.equal(
+      await grantedPage.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+    );
+    await grantedPage.screenshot({
+      path: path.join(screenshots, 'site-permission-mobile.png'),
+      fullPage: true,
+    });
+    await context.close();
+    context = undefined;
+  } finally {
+    await rm(grantedCopy, { recursive: true, force: true });
+  }
   console.log(
-    'PASS: privacy gate, decline, offline policy, versioned acknowledgment and storage failure; original icons, image notice, fixed identity, persistence, assets, routing and CSP',
+    'PASS: privacy gate, offline policy, acknowledgment; no authorization button, no ungranted fetch or CORS errors, image fallback, granted host access, persistence, assets, routing and CSP',
   );
 } finally {
   await context?.close();
