@@ -87,7 +87,7 @@ Use export and import to move your bookmarks between them.
 
 ### Option 1: Run From Source
 
-Requirements: Node.js 20.19.2, npm 10.8.2, and a modern browser with Web Locks support.
+Requirements: Node.js 24.x, npm 10.8.2 or later, and a modern browser with Web Locks support.
 
 Clone this repository, or download and extract the source ZIP:
 
