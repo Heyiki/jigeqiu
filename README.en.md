@@ -154,6 +154,19 @@ The app uses hash routing, so no additional SPA route rewrites are required.
 
 ## Usage
 
+### Chrome / Edge New Tab Extension
+
+Download `jigeqiu-extension-<version>.zip` from Releases, extract it, enable
+developer mode on the browser's extensions page, and load the folder containing
+`manifest.json`. Node.js is not required. The ZIP is not a double-click installer.
+See the [extension documentation](extension/README.md) for builds, permissions,
+and testing.
+
+Pushing a `vX.Y.Z` tag matching `package.json` builds both the web and extension
+ZIPs and a combined `SHA256SUMS.txt`. The workflow uploads and downloads all three
+assets for verification before publishing a single Release. Failures leave new
+releases in draft; existing published packages are never overwritten automatically.
+
 ### Import Your Bookmarks
 
 1. Export your browser bookmarks as an HTML file from its bookmark manager.

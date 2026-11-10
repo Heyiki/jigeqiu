@@ -145,6 +145,17 @@ nginx -s reload
 
 ## 使用指南
 
+### Chrome / Edge 新标签页扩展
+
+从 Releases 下载 `jigeqiu-extension-<版本号>.zip`，解压后在浏览器扩展管理页
+开启开发者模式，加载直接包含 `manifest.json` 的目录。无需安装 Node.js，
+ZIP 不能直接双击安装。构建、权限与测试说明见[扩展文档](extension/README.md)。
+
+维护者推送与 `package.json` 一致的 `vX.Y.Z` 标签后，发布流水线会统一构建
+Web ZIP 和扩展 ZIP，生成包含两个包的 `SHA256SUMS.txt`；
+上传及下载回验全部通过后，自动公开同一个 Release。
+失败时不会公开不完整的新版本，已有公开版本不会被自动覆盖。
+
 ### 导入已有书签
 
 1. 在浏览器书签管理器中将书签导出为 HTML 文件。

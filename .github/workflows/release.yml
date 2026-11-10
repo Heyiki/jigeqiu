@@ -1,4 +1,4 @@
-name: Release Web Package
+name: Release Web and Extension
 
 on:
   push:
@@ -43,14 +43,18 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: node scripts/package-release.mjs "$RELEASE_TAG"
-      - name: Create draft release
+      - name: Build and package extension
+        run: npm run package:extension
+      - name: Prepare both release packages
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/publish-release.mjs "$RELEASE_TAG"
+      - name: Verify both package checksums
+        working-directory: release-assets
+        run: sha256sum --check SHA256SUMS.txt
+      - name: Upload, verify and publish release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          gh release create "$RELEASE_TAG" \
-            "release-assets/jigeqiu-${RELEASE_TAG}-web.zip" \
-            release-assets/SHA256SUMS.txt \
-            --verify-tag --draft --title "JIGEQIU ${RELEASE_TAG}" \
-            --notes "Static website package. Extract the ZIP into your web root. No Node.js runtime or database is required. See README for deployment instructions."
+        run: node scripts/publish-release.mjs "$RELEASE_TAG" --publish

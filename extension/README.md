@@ -42,7 +42,7 @@ ZIP 根目录直接包含 `manifest.json`，没有多余的 `dist-extension/` �
 
 ## GitHub Actions 打包
 
-工作流 `.github/workflows/extension.yml` 在推送到 `master`、推送 `v*` 标签，
+工作流 `.github/workflows/extension.yml` 在推送到 `master`，
 或通过 Actions 页面手动运行时执行扩展测试、构建、打包和 SHA256 校验。
 
 进入仓库 **Actions → Package Browser Extension → 对应运行记录 → Artifacts**，
@@ -50,6 +50,28 @@ ZIP 根目录直接包含 `manifest.json`，没有多余的 `dist-extension/` �
 和 `SHA256SUMS.txt`。本地安装时再解压其中的扩展 ZIP，选择直接包含
 `manifest.json` 的目录。Artifact 保留 30 天，不会自动创建或修改 GitHub Release，
 也不会发布到 Chrome / Edge 商店。
+
+正式版本由 `.github/workflows/release.yml` 统一发布。推送与 `package.json`
+版本一致的 `vX.Y.Z` 标签后，流水线执行完整检查，构建 Web 和扩展包，
+核验两个 ZIP，并将以下附件上传到同一个草稿 Release：
+
+```text
+jigeqiu-vX.Y.Z-web.zip
+jigeqiu-extension-X.Y.Z.zip
+SHA256SUMS.txt
+```
+
+附件上传后会下载回验，全部成功才自动公开 Release。失败时保留草稿，
+可在 Actions 中重跑该 tag 的发布工作流；已有草稿会被复用。
+完整草稿校验通过后直接公开，不重复上传；不完整草稿只补传缺失附件，
+已有附件与本次构建不一致时停止，避免重试删除仍可用的包。
+已公开版本只校验远端附件与其校验文件，不覆盖现有包。
+同一 tag 存在多个 Release 或公开版本缺包时会明确失败，需要维护者手动处理，
+不会删除发布记录或静默修改已公开版本。
+
+两个 ZIP 均下载后，可在同一目录执行 `sha256sum --check SHA256SUMS.txt`。
+正式安装下载扩展 ZIP 后只需解压一次，选择直接包含 `manifest.json` 的目录。
+这不是 CRX 自动安装包，也不会自动发布到扩展商店。
 
 ## 本地安装
 
