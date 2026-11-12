@@ -105,10 +105,13 @@ or web server is required.
 5. Open a new tab, confirm any browser prompt to keep the new tab change,
    and read the privacy notice on first launch.
 
-This is not a double-click CRX installer or an extension-store installation.
-Keep the extracted folder in place: the browser still needs its files.
-Resolve any conflict with another extension replacing the new tab.
-Local installation does not mean remote icons, external search, or websites work offline.
+**Quick install in Chrome:** Download the extension ZIP without extracting it.
+Open `chrome://extensions/`, turn on **Developer mode** in the top-right corner,
+drag the ZIP onto the page, then open a new tab. If nothing happens, use the folder steps above.
+
+If you installed from a folder, keep that folder in place. If your new tab still shows
+another extension, turn off that new tab extension on the extensions page.
+Search, website icons and opening websites need an internet connection.
 
 Website icons do not use third-party favicon aggregation services. Bookmark forms and Launchpad share discovery and validation. Failed automatic icons and manual refreshes try homepage declarations, manifests and common icon paths. CORS and extension site permissions still apply; image URLs can be entered manually. SVGs are displayed only as external images. Local icon caches can still be cleared in appearance settings.
 

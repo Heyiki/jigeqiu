@@ -161,7 +161,8 @@ test('a new release stays draft until both ZIPs and the checksum are uploaded an
     'manifest.json',
     'HTTPS',
     'Source code',
-    'JSON',
+    '导出资产备份',
+    'Export asset backup',
     '不要先卸载',
     'Web',
     'English',
@@ -170,6 +171,15 @@ test('a new release stays draft until both ZIPs and the checksum are uploaded an
     'personal bookmark workbench',
     '| 文件 | 适用场景 | 使用方式 |',
     '| File | Intended Use | Getting Started |',
+    '拖入',
+    'drag the extension ZIP',
+    '桌面布局与任务栏',
+    'desktop layout and taskbar',
+    '### Web 网页版使用',
+    '### Use the Web Edition',
+    'index.html',
+    '不要直接双击',
+    'Keep the same website address',
   ]) {
     assert.ok(body.includes(text), `Release instructions missing: ${text}`);
   }
@@ -182,6 +192,12 @@ test('a new release stays draft until both ZIPs and the checksum are uploaded an
     'No placeholder versions in release instructions',
   );
   assert.ok(body.indexOf('## 中文') < body.indexOf('## English'));
+  assert.ok(!body.includes('扩展 ZIP 需先解压'));
+  assert.ok(!body.includes('普通资产备份不包含全部设置、布局和壁纸'));
+  assert.ok(!body.includes('不要假定'));
+  assert.ok(!body.includes('Do not assume'));
+  assert.ok(body.includes('### Chrome 安装'));
+  assert.ok(body.includes('### 更新与备份'));
   const upload = gh.calls.findIndex((args) => args.includes('--input'));
   const publish = gh.calls.findIndex((args) => args.includes('PATCH'));
   assert.ok(upload > 0 && publish > upload);
