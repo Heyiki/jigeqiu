@@ -5,6 +5,8 @@ export const guideMessages = {
   guideSections: { zh: '指南小节', en: 'Guide sections' },
   guideGettingStarted: { zh: '快速上手', en: 'Getting started' },
   guideKeyboard: { zh: '快捷键', en: 'Keyboard shortcuts' },
+  guideShortcutOr: { zh: '或', en: 'or' },
+  guideDoubleShiftHint: { zh: '（双击 Shift）', en: '(double-tap Shift)' },
   guideCommands: { zh: '快捷指令', en: 'Commands' },
   guideActions: { zh: '操作说明', en: 'Actions' },
   guideStartImport: {

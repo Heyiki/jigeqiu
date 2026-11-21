@@ -8,7 +8,7 @@ let browser;
 try {
   await server.listen();
   browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const context = await browser.newContext({ locale: 'zh-CN', viewport: { width: 1440, height: 1000 } });
   await context.route('https://**/*', route => route.fulfill({ body: 'Search destination' }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
@@ -34,9 +34,58 @@ try {
   });
   await page.reload();
   const home = page.getByRole('search', { name: '桌面搜索', exact: true });
-  await home.getByRole('button', { name: /切换搜索引擎/ }).click();
   const dialog = page.getByRole('dialog', { name: '全局搜索', exact: true });
   const input = dialog.getByRole('combobox', { name: '搜索内容', exact: true });
+  const doubleShift = async () => {
+    await page.keyboard.press('Shift');
+    await page.keyboard.press('Shift');
+  };
+  await home.waitFor();
+  await page.keyboard.press('Shift');
+  assert.equal(await dialog.count(), 0, 'A single Shift tap does not open search');
+  await page.keyboard.press('Shift');
+  await dialog.waitFor();
+  assert.equal(await input.evaluate(element => element === document.activeElement), true);
+  await input.fill('keep draft');
+  await doubleShift();
+  assert.equal(await input.inputValue(), 'keep draft', 'Shift taps inside input preserve the draft');
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'hidden' });
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Shift');
+  assert.equal(await dialog.count(), 0, 'Shift+Tab is not the first tap of a double Shift');
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await page.keyboard.press('Shift');
+  assert.equal(await dialog.count(), 0, 'Blur discards an unfinished gesture');
+  await page.keyboard.press('Control+k');
+  await dialog.waitFor();
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'hidden' });
+  await page.locator('[data-onboarding="management"]').click();
+  await doubleShift();
+  assert.equal(await dialog.count(), 0, 'Management views keep Shift taps');
+  await page.getByRole('button', { name: '桌面', exact: true }).click();
+  await doubleShift();
+  await dialog.waitFor();
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'hidden' });
+  await page.keyboard.press('Control+Shift+Enter');
+  const addDialog = page.getByRole('dialog');
+  await addDialog.waitFor();
+  await doubleShift();
+  assert.equal(await dialog.count(), 0, 'Bookmark dialogs retain Shift taps');
+  await page.keyboard.press('Escape');
+  await addDialog.waitFor({ state: 'hidden' });
+  await page.evaluate(() => {
+    const field = document.createElement('input');
+    field.id = 'shift-test-input';
+    document.body.append(field);
+    field.focus();
+  });
+  await doubleShift();
+  assert.equal(await dialog.count(), 0, 'Other input fields retain Shift');
+  await page.evaluate(() => document.getElementById('shift-test-input').remove());
+  await home.getByRole('button', { name: /切换搜索引擎/ }).click();
   const picker = dialog.getByRole('group', { name: '搜索引擎', exact: true });
   await picker.waitFor();
   assert.equal(await picker.getByRole('button', { name: 'Disabled engine', exact: true }).count(), 0);
@@ -157,8 +206,51 @@ try {
   await dialog.waitFor({ state: 'hidden' });
   await page.reload();
   await home.getByRole('button', { name: '切换搜索引擎：百度', exact: true }).waitFor();
+  await page.getByRole('button', { name: '切换为英文', exact: true }).click();
+  await page.getByRole('button', { name: 'Switch to Chinese', exact: true }).waitFor();
+  await doubleShift();
+  const englishDialog = page.locator('[data-panel="search"]');
+  await englishDialog.waitFor();
+  assert.equal(await englishDialog.getByRole('combobox').evaluate(element => element === document.activeElement), true);
+  await page.keyboard.press('Escape');
+  await englishDialog.waitFor({ state: 'hidden' });
+  for (const [width, english] of [[390, true], [320, false]]) {
+    await page.setViewportSize({ width, height: 844 });
+    if (!english) await page.getByRole('button', { name: 'Switch to Chinese', exact: true }).click();
+    await page.locator('[data-onboarding="guide"]').click();
+    const guide = page.getByRole('dialog', { name: english ? 'User guide' : '使用指南', exact: true });
+    await guide.getByRole('tab', { name: english ? 'Keyboard shortcuts' : '快捷键', exact: true }).click();
+    const searchRows = guide.locator('dl > div').filter({ has: page.locator('dt', { hasText: english ? /^Open search/ : /^打开搜索/ }) });
+    assert.equal(await searchRows.count(), 1, 'Search shortcuts share a single help row');
+    const shortcuts = await searchRows.locator('dd').innerText();
+    const searchKeys = await searchRows.locator('kbd').allTextContents();
+    assert.match(searchKeys[0], /^(Ctrl|⌘)$/);
+    assert.deepEqual(searchKeys.slice(1), ['K', 'Shift', 'Shift']);
+    assert.ok(shortcuts.includes(english ? 'or' : '或'));
+    assert.ok(shortcuts.includes(english ? 'double-tap Shift' : '双击 Shift'));
+    const commandRow = guide.locator('dl > div').filter({
+      has: page.locator('dt', { hasText: english ? 'Open command search (desktop)' : '打开指令搜索（桌面）' }),
+    });
+    assert.deepEqual(await commandRow.locator('kbd').allTextContents(), ['/', '、']);
+    assert.ok((await commandRow.locator('dd').innerText()).includes(english ? 'or' : '或'),
+      'Command-entry keys are explicitly alternatives');
+    const tabRow = guide.locator('dl > div').filter({
+      has: page.locator('dt', { hasText: english ? 'Next / previous control' : '下一个／上一个控件' }),
+    });
+    assert.deepEqual(await tabRow.locator('kbd').allTextContents(), ['Tab', 'Shift', 'Tab']);
+    assert.ok((await tabRow.locator('dd').innerText()).includes(english ? 'or' : '或'));
+    assert.equal(await guide.locator('kbd').evaluateAll(elements =>
+      elements.some(element => element.textContent.includes('+'))), false, 'Each keycap holds only one key');
+    assert.equal(await searchRows.evaluate(element => element.scrollWidth > element.clientWidth), false,
+      'Combined shortcut row fits the narrow guide');
+    assert.equal(await guide.locator('dl > div').evaluateAll(rows =>
+      rows.some(row => row.scrollWidth > row.clientWidth)), false, 'Every shortcut row fits');
+    await guide.screenshot({ path: `test-results/screenshots/guide-keyboard-${width}.png` });
+    await page.keyboard.press('Escape');
+    await guide.waitFor({ state: 'hidden' });
+  }
   assert.deepEqual(errors, []);
-  console.log('PASS left engine/grid picker, mouse and Enter parity, input preservation/focus, IME/Escape/keyboard, light/dark and 390/320px layouts');
+  console.log('PASS double Shift/legacy shortcut, input/dialog/management/chord guards, left engine/grid picker, mouse and Enter parity, input preservation/focus, IME/Escape/keyboard, light/dark and 390/320px layouts');
 } finally {
   await browser?.close();
   await server.close();

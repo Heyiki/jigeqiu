@@ -35,6 +35,7 @@ one command to reduce authorization requests without broadening permissions.
 | Asset JSON parser/merge/deduplication | `prototype-json`, `json-import-service`; browser `json-assets` |
 | Full backup, restore, journal, references | `workbench-backup`, `formal-storage-safety`; browser `workbench-backup` |
 | Desktop keyboard | `desktop-keyboard`; browser `desktop-keyboard` |
+| Search opening shortcuts / double Shift | `app-shortcuts`; browser `spotlight-ui` (shortcut guards, focus, existing search UI) |
 | Desktop search input and result window | `spotlight-window`, `spotlight-ranking`, `spotlight-commands`; browser `spotlight-input` (builds and tests an isolated extension with 1,200 synthetic bookmarks) |
 | Launchpad drag/inertia | `launchpad-gestures`; browser `launchpad-inertia` or `launchpad-scroll-ownership`, according to the changed behavior |
 | Shared keyboard/navigation/onboarding anchors | Add the affected navigation or onboarding suite, not every browser suite |

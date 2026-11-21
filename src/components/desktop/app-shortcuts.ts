@@ -15,3 +15,37 @@ export function appShortcut(event: ShortcutEvent) {
 }
 
 export const EDITABLE_SELECTOR = 'input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="combobox"]';
+
+export function createDoubleShiftTracker() {
+  let downAt: number | null = null;
+  let firstTapAt: number | null = null;
+  const reset = () => { downAt = null; firstTapAt = null; };
+  return {
+    reset,
+    handle(event: ShortcutEvent & { timeStamp: number }, type: 'keydown' | 'keyup', enabled = true) {
+      if (!enabled || event.key !== 'Shift' || event.defaultPrevented || event.repeat
+        || event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey) {
+        reset();
+        return false;
+      }
+      const now = event.timeStamp;
+      if (type === 'keydown') {
+        if (downAt !== null) { reset(); return false; }
+        if (firstTapAt !== null && now - firstTapAt > 400) firstTapAt = null;
+        downAt = now;
+        return false;
+      }
+      if (downAt === null || now - downAt > 300 || event.shiftKey) {
+        reset();
+        return false;
+      }
+      downAt = null;
+      if (firstTapAt !== null && now - firstTapAt <= 400) {
+        reset();
+        return true;
+      }
+      firstTapAt = now;
+      return false;
+    },
+  };
+}

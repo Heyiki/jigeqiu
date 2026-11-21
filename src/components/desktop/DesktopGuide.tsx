@@ -46,9 +46,19 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
     [actionTerm('removeFolder', locale), t('guideActionRemoveFolder')],
     [actionTerm('deleteBookmark', locale), t('guideActionDeleteBookmark')],
   ];
-  const keys = (values: readonly string[]) => <span className="inline-flex flex-wrap justify-end gap-1">
-    {values.map((value, index) => <kbd key={index} className="rounded border border-slate-300/70 bg-black/5 px-1.5 py-0.5 text-[11px] dark:border-white/20 dark:bg-white/10">{value}</kbd>)}
+  const keys = (values: readonly string[], separator = '+') => <span className="inline-flex items-center gap-1 whitespace-nowrap">
+    {values.map((value, index) => <span key={index} className="inline-flex items-center gap-1">
+      {index > 0 && <span className="text-xs">{separator}</span>}
+      <kbd className="rounded border border-slate-300/70 bg-black/5 px-1.5 py-0.5 text-[11px] dark:border-white/20 dark:bg-white/10">{value}</kbd>
+    </span>)}
   </span>;
+  const alternatives = (options: readonly (readonly string[])[]) =>
+    <span className="inline-flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-xs">
+      {options.map((option, index) => <span key={index} className="inline-flex items-center gap-1.5">
+        {index > 0 && <span>{t('guideShortcutOr')}</span>}{keys(option)}
+      </span>)}
+    </span>;
+  const shortcutRow = 'grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] items-center gap-3 py-2';
   return <>
     <button ref={button} data-onboarding="guide" type="button" aria-label={t('guideTitle')} title={t('guideTitle')}
       style={{ bottom, right: 'max(14px, env(safe-area-inset-right))' }}
@@ -88,16 +98,27 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
         {section === 1 && <>
           <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">{t('guideKeyboardScope')}</p>
           <dl className="divide-y divide-black/10 dark:divide-white/10">
-            {SHORTCUTS.map(shortcut => <div key={shortcut.action} className="flex items-center justify-between gap-3 py-2"><dt>{en ? shortcut.en : shortcut.zh}</dt><dd>{keys([mod, ...shortcut.keys])}</dd></div>)}
+            {SHORTCUTS.map(shortcut => <div key={shortcut.action} className={shortcutRow}>
+              <dt className="min-w-0 break-words">{en ? shortcut.en : shortcut.zh}</dt>
+              <dd className="min-w-0 text-right">{shortcut.action === 'search'
+                ? <span className="inline-flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 text-xs">
+                  {keys([mod, ...shortcut.keys])}<span>{t('guideShortcutOr')}</span>
+                  {keys(['Shift', 'Shift'], '→')}<span>{t('guideDoubleShiftHint')}</span>
+                </span>
+                : keys([mod, ...shortcut.keys])}</dd>
+            </div>)}
             {[
-              [t('guideSearchEntry'), ['/', '、']],
-              [t('guideDesktopPages'), ['←', '→']],
-              [t('guideSearchSelection'), ['↑', '↓']],
-              [t('guideLaunchpadSelection'), ['←', '↑', '↓', '→']],
-              [t('guideControlNavigation'), ['Tab', 'Shift + Tab']],
-              [t('guideSubmit'), ['Enter']],
-              [t('guideClose'), ['Esc']],
-            ].map(([label, values]) => <div key={label as string} className="flex items-center justify-between gap-3 py-2"><dt>{label}</dt><dd>{keys(values as string[])}</dd></div>)}
+              { label: t('guideSearchEntry'), options: [['/'], ['、']] },
+              { label: t('guideDesktopPages'), options: [['←'], ['→']] },
+              { label: t('guideSearchSelection'), options: [['↑'], ['↓']] },
+              { label: t('guideLaunchpadSelection'), options: [['←'], ['↑'], ['↓'], ['→']] },
+              { label: t('guideControlNavigation'), options: [['Tab'], ['Shift', 'Tab']] },
+              { label: t('guideSubmit'), options: [['Enter']] },
+              { label: t('guideClose'), options: [['Esc']] },
+            ].map(({ label, options }) => <div key={label} className={shortcutRow}>
+              <dt className="min-w-0 break-words">{label}</dt>
+              <dd className="min-w-0 text-right">{alternatives(options)}</dd>
+            </div>)}
           </dl>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">{t('guideKeyboardDetails')}</p>
         </>}

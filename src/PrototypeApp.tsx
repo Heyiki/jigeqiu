@@ -22,7 +22,7 @@ import { BottomDock } from './components/dock/BottomDock';
 import { SpotlightSearch } from './components/desktop/SpotlightSearch';
 import { DesktopView } from './components/desktop/DesktopView';
 import { DesktopGuide } from './components/desktop/DesktopGuide';
-import { appShortcut, EDITABLE_SELECTOR } from './components/desktop/app-shortcuts';
+import { appShortcut, createDoubleShiftTracker, EDITABLE_SELECTOR } from './components/desktop/app-shortcuts';
 import { DesktopWindow } from './components/desktop/DesktopWindow';
 import { FolderModal } from './components/desktop/FolderModal';
 import { QuickAddModal } from './components/desktop/QuickAddModal';
@@ -434,20 +434,29 @@ export default function PrototypeApp() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const action = appShortcut(e);
-      if (!action || currentTab !== 'desktop' || onboardingBlocking) return;
+    const doubleShift = createDoubleShiftTracker();
+    const resetShift = () => doubleShift.reset();
+    const handleKey = (e: KeyboardEvent) => {
+      const shift = e.key === 'Shift';
+      if (!shift) resetShift();
+      const action = e.type === 'keydown' ? appShortcut(e) : null;
+      if (!action && !shift) return;
+      if (currentTab !== 'desktop' || onboardingBlocking) { resetShift(); return; }
       const dialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"],[role="alertdialog"],[role="menu"],[aria-modal="true"],.desktop-window')]
         .filter(element => element.getClientRects().length && !element.closest('[hidden],[aria-hidden="true"],[inert]'));
       const search = document.querySelector<HTMLElement>('[data-panel="search"]');
       const launchpad = document.querySelector<HTMLElement>('[data-panel="launchpad"]');
       if (dialogs.some(element => element !== search && element !== launchpad)
-        || document.querySelector('[data-desktop-editing="true"]')) return;
+        || document.querySelector('[data-desktop-editing="true"]')) { resetShift(); return; }
       const target = e.target instanceof Element ? e.target : document.activeElement;
-      if ((target?.closest(EDITABLE_SELECTOR) || document.activeElement?.closest(EDITABLE_SELECTOR))
-        && !(search?.contains(target) || launchpad?.contains(target))) return;
+      const editable = target?.closest(EDITABLE_SELECTOR) || document.activeElement?.closest(EDITABLE_SELECTOR);
+      if (shift) {
+        if (!doubleShift.handle(e, e.type === 'keydown' ? 'keydown' : 'keyup',
+          !editable && !search && !launchpad
+          && !document.querySelector('[data-desktop-interaction="true"]'))) return;
+      } else if (editable && !(search?.contains(target) || launchpad?.contains(target))) return;
       e.preventDefault();
-      if (action === 'search') {
+      if (shift || action === 'search') {
         closeLaunchpad();
         setIsSearchOpen(true);
         search?.querySelector<HTMLInputElement>('input')?.focus();
@@ -461,8 +470,24 @@ export default function PrototypeApp() {
         setIsQuickAddOpen(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Observe chords even if a child consumes their keydown before it reaches the window.
+    const observeChord = (e: KeyboardEvent) => { if (e.key !== 'Shift') resetShift(); };
+    window.addEventListener('keydown', observeChord, true);
+    window.addEventListener('keydown', handleKey);
+    window.addEventListener('keyup', handleKey);
+    window.addEventListener('blur', resetShift);
+    window.addEventListener('pointerdown', resetShift, true);
+    window.addEventListener('focusin', resetShift);
+    window.addEventListener('compositionstart', resetShift, true);
+    return () => {
+      window.removeEventListener('keydown', observeChord, true);
+      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('keyup', handleKey);
+      window.removeEventListener('blur', resetShift);
+      window.removeEventListener('pointerdown', resetShift, true);
+      window.removeEventListener('focusin', resetShift);
+      window.removeEventListener('compositionstart', resetShift, true);
+    };
   }, [currentTab, route, onboardingBlocking]);
 
   const showToast = (message: string, actionText?: string, onAction?: () => void) => {

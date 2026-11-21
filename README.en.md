@@ -257,6 +257,7 @@ Use global search to find bookmarks by title, domain, or keywords, or send your
 query to the selected search engine. The launchpad also supports pinyin search.
 Add engines from the built-in catalog or configure your own.
 Type `/` in the search box to see the available commands.
+On the desktop, press `Shift` twice quickly to open search, or use `Ctrl+K` (`⌘+K` on Mac).
 
 | Command | Action |
 | --- | --- |
