@@ -42,6 +42,7 @@ try {
   await input.fill('Unsplash');
   const bookmarks = search.getByRole('option').filter({ hasText: 'Unsplash' })
     .filter({ hasText: /one\.example\.test|two\.example\.test/ });
+  await bookmarks.first().waitFor();
   assert.equal(await bookmarks.count(), 2);
   await bookmarks.filter({ hasText: '全部收藏 / 工作 / 设计 / 素材库' }).waitFor();
   await bookmarks.filter({ hasText: '全部收藏 / 个人 / 素材库' }).waitFor();

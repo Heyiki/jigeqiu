@@ -50,6 +50,7 @@
     "test:browser:icon-picker": "node tests/browser/icon-picker.mjs",
     "test:browser:bookmark-form": "node tests/browser/bookmark-form.mjs",
     "test:browser:spotlight-ui": "node tests/browser/spotlight-ui.mjs",
+    "test:browser:spotlight-input": "npm run build:extension && node tests/browser/spotlight-input.mjs",
     "test:browser:spotlight-commands": "node tests/browser/spotlight-commands.mjs",
     "test:browser:spotlight-library": "node tests/browser/spotlight-library.mjs",
     "test:browser:bookmark-search": "node tests/browser/bookmark-search.mjs",

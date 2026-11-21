@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
 import {
   Search,
   Folder as FolderIcon,
@@ -18,6 +18,7 @@ import { SearchEngineGrid } from './SearchEngineGrid';
 import { isDesktopSearchKey, matchSpotlightCommands, type SystemCommandId } from './spotlight-commands';
 import { appShortcut } from './app-shortcuts';
 import { normalizeSpotlightText, parseSpotlightUrlQuery, rankSpotlightBookmarks, type SpotlightUrlMatch } from './spotlight-ranking';
+import { spotlightWindow, spotlightScrollTarget, SPOTLIGHT_ROW_HEIGHT } from './spotlight-window';
 import './spotlight-search.css';
 import { buildBookmarkSearchIndex } from '../../services/bookmark-search';
 import {
@@ -219,6 +220,12 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
   };
 
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  const resultQuery = !query.trim() || query.trimStart().startsWith('/') ? query : deferredQuery;
+  const resultsPending = resultQuery !== query;
+  const [listViewport, setListViewport] = useState({ top: 0, height: 600 });
+  const [focusedResultId, setFocusedResultId] = useState<string | null>(null);
+  const pendingFocus = useRef<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [resultSelected, setResultSelected] = useState(false);
   const [showEngineDropdown, setShowEngineDropdown] = useState(false);
@@ -235,6 +242,7 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
     locale: resolveLocale(language), paused: tipsPaused || isOpen || tipHovered || tipFocused,
   });
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentUsed, setRecentUsed] = useState<string[]>([]);
   const [switchNotice, setSwitchNotice] = useState<string | null>(null);
   const [sessionEngine, setSessionEngine] = useState<SearchEngine | null>(null);
 
@@ -294,7 +302,10 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
   const currentEngine = availableEngines.find(engine => engine.id === sessionEngine?.id) ?? defaultEngine;
 
   useEffect(() => {
-    setRecentSearches(storage.getRecentSearches());
+    if (isOpen) {
+      setRecentSearches(storage.getRecentSearches());
+      setRecentUsed(storage.getRecentUsed());
+    }
   }, [isOpen]);
 
   // Desktop command invocation and local dismissal; panel shortcuts live in PrototypeApp.
@@ -342,7 +353,7 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
   }, [isOpen]);
 
   // Compute results with rich action items & badges
-  const results = useMemo((): SpotlightItem[] => {
+  const computeResults = useCallback((query: string): SpotlightItem[] => {
     const rawQuery = query.trim();
     const q = normalizeSpotlightText(rawQuery);
     const items: SpotlightItem[] = [];
@@ -425,7 +436,7 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
 
     // When query is empty: show smart suggestions / recent bookmarks / plugins
     if (!q) {
-      const recentIds = storage.getRecentUsed();
+      const recentIds = recentUsed;
       recentIds.forEach(id => {
         const bm = bookmarks.find(b => b.id === id);
         if (bm) {
@@ -461,7 +472,7 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
     }
 
     // 1. Matched Bookmarks
-    const recentIds = new Set(storage.getRecentUsed());
+    const recentIds = new Set(recentUsed);
     const rankedBookmarks = rankSpotlightBookmarks(bookmarks, query, bm => libraryPath(bm.folderId), bookmarkSearchIndex);
     rankedBookmarks.matches.forEach(({ bookmark: bm, urlMatch }) => {
       const path = libraryPath(bm.folderId);
@@ -590,7 +601,47 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
     }
 
     return items;
-  }, [query, bookmarks, folders, collections, plugins, platformSites, currentEngine, availableEngines, onSystemCommand, folderCounts, language, bookmarkSearchIndex]);
+  }, [bookmarks, folders, collections, plugins, platformSites, currentEngine, availableEngines, onSystemCommand, folderCounts, language, bookmarkSearchIndex, recentUsed, folderPaths]);
+  const results = useMemo(() => isOpen ? computeResults(resultQuery) : [], [isOpen, computeResults, resultQuery]);
+  const resultWindow = spotlightWindow(results.length, listViewport.top, listViewport.height);
+  const visibleIndexes = Array.from({ length: resultWindow.end - resultWindow.start }, (_, offset) => resultWindow.start + offset);
+  const focusedResultIndex = focusedResultId ? results.findIndex(item => item.id === focusedResultId) : -1;
+  // Keep an actively focused row mounted even when pointer scrolling moves it out of view.
+  if (focusedResultIndex >= 0 && !visibleIndexes.includes(focusedResultIndex)) {
+    visibleIndexes.push(focusedResultIndex);
+    visibleIndexes.sort((a, b) => a - b);
+  }
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = () => setListViewport({ top: list.scrollTop, height: list.clientHeight });
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [isOpen, showEngineDropdown]);
+  useLayoutEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+    setListViewport(viewport => ({ ...viewport, top: 0 }));
+    pendingFocus.current = null;
+    setFocusedResultId(null);
+  }, [resultQuery, isOpen]);
+  const revealResult = (index: number, focus = false) => {
+    const list = listRef.current;
+    if (!list || !results[index]) return;
+    if (focus) pendingFocus.current = index;
+    const top = spotlightScrollTarget(index, list.scrollTop, list.clientHeight - 16);
+    list.scrollTop = top;
+    setListViewport({ top, height: list.clientHeight });
+  };
+  useLayoutEffect(() => {
+    const index = pendingFocus.current;
+    if (index === null) return;
+    const item = results[index];
+    const row = item && document.getElementById(`spotlight-result-${item.id}`);
+    if (row) { pendingFocus.current = null; row.focus({ preventScroll: true }); }
+  }, [listViewport, results]);
 
   // Reset selected index when results change
   useEffect(() => {
@@ -614,12 +665,12 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
   };
 
   // Execute selected item
-  const handleExecuteItem = (item: SpotlightItem) => {
+  const handleExecuteItem = (item: SpotlightItem, executionQuery = query) => {
     // Command engines are temporary; only the engine picker updates the default.
     if (item.kind === 'switch-engine') {
       if (item.restQuery) {
-        if (query.trim()) {
-          void storage.mutate(() => storage.addRecentSearch(query.trim())).catch(() => {});
+        if (executionQuery.trim()) {
+          void storage.mutate(() => storage.addRecentSearch(executionQuery.trim())).catch(() => {});
         }
         setIsOpen(false);
         handleExternalSearch(item.restQuery, item.engine);
@@ -633,8 +684,8 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
       return;
     }
 
-    if (query.trim()) {
-      void storage.mutate(() => storage.addRecentSearch(query.trim())).catch(() => {});
+    if (executionQuery.trim()) {
+      void storage.mutate(() => storage.addRecentSearch(executionQuery.trim())).catch(() => {});
     }
     setIsOpen(false);
 
@@ -683,18 +734,28 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
     setIsOpen(false);
   };
 
-  const defaultAction = results.find(item => item.kind === 'system-command'
+  const findDefaultAction = (items: SpotlightItem[]) => items.find(item => item.kind === 'system-command'
     || item.kind === 'switch-engine' || (item.kind === 'search-engine' && item.badge === '快捷指令'));
+  const defaultAction = findDefaultAction(results);
   // Equivalent saved URLs share a target; the first exact match precedes direct-open.
   const automaticItem = query.trim()
     ? defaultAction ?? results.find(item => item.kind === 'bookmark' && item.automaticSelection)
       ?? results.find(item => item.kind === 'direct-url') ?? results[0]
     : undefined;
-  const activeIndex = resultSelected ? selectedIndex : automaticItem ? results.indexOf(automaticItem) : -1;
-  const primaryItem = showEngineDropdown ? undefined : results[activeIndex] ?? defaultAction;
+  const activeIndex = resultsPending ? -1 : resultSelected ? selectedIndex : automaticItem ? results.indexOf(automaticItem) : -1;
+  const primaryItem = showEngineDropdown || resultsPending ? undefined : results[activeIndex] ?? defaultAction;
   const executePrimary = () => {
     if (compositionRef.current || showEngineDropdown) return;
-    if (primaryItem) handleExecuteItem(primaryItem);
+    const text = inputRef.current?.value ?? query;
+    if (resultQuery !== text) {
+      // Enter may arrive before the deferred list catches up. Resolve the current input, never a stale row.
+      const fresh = computeResults(text);
+      const action = findDefaultAction(fresh);
+      const item = text.trim() ? action ?? fresh.find(item => item.kind === 'bookmark' && item.automaticSelection)
+        ?? fresh.find(item => item.kind === 'direct-url') ?? fresh[0] : undefined;
+      if (item) handleExecuteItem(item, text);
+      else if (text.trim()) handleExternalSearch(text);
+    } else if (primaryItem) handleExecuteItem(primaryItem);
     else if (query.trim()) handleExternalSearch();
   };
 
@@ -710,7 +771,10 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
         engineDropdownRef.current?.querySelector<HTMLButtonElement>('[data-engine-choice]')?.focus();
         return;
       }
-      setSelectedIndex((activeIndex + 1) % Math.max(1, results.length));
+      if (resultsPending) return;
+      const index = (activeIndex + 1) % Math.max(1, results.length);
+      setSelectedIndex(index);
+      revealResult(index);
       setResultSelected(true);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
@@ -719,7 +783,10 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
         choices?.item(choices.length - 1)?.focus();
         return;
       }
-      setSelectedIndex(activeIndex <= 0 ? Math.max(0, results.length - 1) : activeIndex - 1);
+      if (resultsPending) return;
+      const index = activeIndex <= 0 ? Math.max(0, results.length - 1) : activeIndex - 1;
+      setSelectedIndex(index);
+      revealResult(index);
       setResultSelected(true);
     } else if (appShortcut(e.nativeEvent) === 'add') {
       e.preventDefault();
@@ -793,8 +860,32 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
             className="spotlight-shell desktop-dialog-surface liquid-glass relative z-10 flex max-h-[min(80dvh,760px)] w-full min-w-0 max-w-[720px] flex-col overflow-hidden rounded-lg animate-in fade-in zoom-in-95 duration-150"
             onKeyDown={event => {
               if (event.key !== 'Tab' || event.nativeEvent.isComposing || compositionRef.current) return;
+              if (!showEngineDropdown && !resultsPending && results.length) {
+                const row = (event.target as Element).closest<HTMLElement>('[data-spotlight-index]');
+                const index = row ? Number(row.dataset.spotlightIndex) : -1;
+                if (event.target === inputRef.current && !event.shiftKey) {
+                  event.preventDefault();
+                  revealResult(0, true);
+                  return;
+                }
+                if ((event.target as Element).closest('[data-spotlight-submit]') && event.shiftKey) {
+                  event.preventDefault();
+                  revealResult(results.length - 1, true);
+                  return;
+                }
+                if (row && ((event.shiftKey && index > 0) || (!event.shiftKey && index < results.length - 1))) {
+                  event.preventDefault();
+                  revealResult(index + (event.shiftKey ? -1 : 1), true);
+                  return;
+                }
+                if (row && event.shiftKey && index === 0) {
+                  event.preventDefault();
+                  inputRef.current?.focus();
+                  return;
+                }
+              }
               const visible = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input, [tabindex="0"]') ?? [])
-                .filter(control => control.getClientRects().length > 0);
+                .filter(control => control.getClientRects().length > 0 && control.getAttribute('aria-disabled') !== 'true');
               const fieldIndex = visible.indexOf(inputRef.current!);
               const options = visible.filter(control => control.getAttribute('role') === 'option');
               const controls = fieldIndex < 0 ? visible : [
@@ -822,7 +913,7 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
                 aria-label="搜索内容"
                 aria-expanded={!showEngineDropdown && results.length > 0}
                 aria-controls={!showEngineDropdown ? 'spotlight-results' : undefined}
-                aria-activedescendant={!showEngineDropdown && results[activeIndex] ? `spotlight-result-${results[activeIndex].id}` : undefined}
+                aria-activedescendant={!showEngineDropdown && activeIndex >= resultWindow.start && activeIndex < resultWindow.end && results[activeIndex] ? `spotlight-result-${results[activeIndex].id}` : undefined}
                 autoComplete="off"
                 spellCheck={false}
                 value={query}
@@ -831,13 +922,14 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
                   setSelectedIndex(0);
                   setResultSelected(false);
                 }}
+                onFocus={() => setFocusedResultId(null)}
                 onCompositionStart={() => { compositionRef.current = true; }}
                 onCompositionEnd={() => { compositionRef.current = false; }}
                 onKeyDown={handleKeyDown}
                 placeholder={t('onboardingSearchPlaceholder')}
                 className="spotlight-input h-12 min-w-0 flex-1 border-0 p-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-500 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
-              <button type="submit" aria-label="搜索" title="搜索" aria-describedby="spotlight-primary-action"
+              <button type="submit" data-spotlight-submit aria-label="搜索" title="搜索" aria-describedby="spotlight-primary-action"
                 disabled={showEngineDropdown || (!query.trim() && !primaryItem)}
                 className="spotlight-submit flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-40">
                 <Search size={20} strokeWidth={2} />
@@ -878,10 +970,14 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
             {!showEngineDropdown && <div
               ref={listRef}
               id="spotlight-results" role="listbox" aria-label="搜索结果"
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 space-y-1"
+              aria-busy={resultsPending}
+              onScroll={event => setListViewport({ top: event.currentTarget.scrollTop, height: event.currentTarget.clientHeight })}
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2"
             >
               {results.length > 0 ? (
-                results.map((item, index) => {
+                <div role="presentation" style={{ height: results.length * SPOTLIGHT_ROW_HEIGHT, position: 'relative', overflowAnchor: 'none' }}>
+                {visibleIndexes.map(index => {
+                  const item = results[index];
                   const isSelected = index === activeIndex;
                   const CommandIcon = item.kind === 'system-command' ? systemCommandIcons[item.command] : Settings;
                   return (
@@ -889,20 +985,25 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
                       key={item.id}
                       id={`spotlight-result-${item.id}`}
                       role="option" aria-selected={isSelected}
+                      aria-posinset={index + 1} aria-setsize={results.length}
+                      aria-disabled={resultsPending || undefined}
+                      data-spotlight-index={index}
+                      style={{ position: 'absolute', top: index * SPOTLIGHT_ROW_HEIGHT, left: 0, right: 0, height: SPOTLIGHT_ROW_HEIGHT - 4 }}
                       tabIndex={0}
-                      onFocus={() => { setSelectedIndex(index); setResultSelected(true); }}
+                      onFocus={() => { setSelectedIndex(index); setResultSelected(true); setFocusedResultId(item.id); }}
                       onKeyDown={event => {
                         if (event.nativeEvent.isComposing || event.keyCode === 229 || compositionRef.current) return;
+                        if (resultsPending) { if (event.key === 'Enter' || event.key === ' ') event.preventDefault(); return; }
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
                           handleExecuteItem(item);
                         } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                           event.preventDefault();
                           const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length;
-                          document.getElementById(`spotlight-result-${results[next].id}`)?.focus();
+                          revealResult(next, true);
                         }
                       }}
-                      onClick={() => handleExecuteItem(item)}
+                      onClick={() => { if (!resultsPending) handleExecuteItem(item); }}
                       className={`flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-500 transition-colors duration-150 ${
                         isSelected
                           ? 'bg-sky-500/15 text-slate-950 dark:text-white font-semibold ring-1 ring-sky-500/30'
@@ -1011,7 +1112,8 @@ export const SpotlightSearch: React.FC<SpotlightSearchProps> = ({
                       </div>
                     </div>
                   );
-                })
+                })}
+                </div>
               ) : (
                 <div className="py-8 px-4 text-center">
                   <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
