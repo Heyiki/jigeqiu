@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Pagination } from '../common/Pagination';
-import { WallpaperSettings } from '../common/WallpaperSettings';
 import {
   Bookmark,
   Folder,
@@ -40,7 +39,7 @@ import {
   X,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
-import { AssetTransferPage } from './AssetTransferPage';
+import { loadTransfer, loadWallpaperSettings } from './management-loading';
 import { SearchEnginePresetPicker } from './SearchEnginePresetPicker';
 import { SearchEngineOrderList } from './SearchEngineOrderList';
 import { SEARCH_ENGINE_PRESETS } from '../../data/search-engine-presets';
@@ -53,6 +52,9 @@ import { commitAndRefresh } from '../../services/library-mutation';
 import { createTranslator } from '../../i18n';
 import type { OnboardingTaskContext } from '../onboarding/types';
 import { buildBookmarkSearchIndex, searchBookmarkIds } from '../../services/bookmark-search';
+
+const AssetTransferPage = React.lazy(loadTransfer);
+const WallpaperSettings = React.lazy(loadWallpaperSettings);
 
 interface UserCenterViewProps {
   onboarding?: OnboardingTaskContext;
@@ -97,17 +99,12 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
   const t = createTranslator(userSettings.language);
   const isDesktopPinned = (bookmark: Bookmark) => desktopBookmarkIds
     ? desktopBookmarkIds.includes(bookmark.id) : bookmark.pinnedToDesktop;
-  const [activeTab, setInternalTab] = useState<Exclude<ManagementSection, 'collections' | 'trash'>>(initialTab || 'bookmarks');
+  const [internalTab, setInternalTab] = useState<Exclude<ManagementSection, 'collections' | 'trash'>>(initialTab || 'bookmarks');
+  const activeTab = initialTab ?? internalTab;
   const setActiveTab = (section: typeof activeTab) => {
     setInternalTab(section);
     onSectionChange?.(section);
   };
-
-  React.useEffect(() => {
-    if (initialTab) {
-      setInternalTab(initialTab);
-    }
-  }, [initialTab]);
 
   // ========================================================
   // Chrome-Style Bookmark Manager State (文件夹层级与全量书签库)
@@ -115,10 +112,11 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
   const [selectedFolderId, setSelectedFolderId] = useState<string>('all');
   const folderPaths = useMemo(() => indexFolderPaths(folders), [folders]);
   const [bookmarkSearch, setBookmarkSearch] = useState('');
-  const bookmarkSearchIndex = useMemo(() => buildBookmarkSearchIndex(bookmarks, bookmark =>
-    bookmark.folderId ? (folderPaths.get(bookmark.folderId) ?? []).map(folder => folder.name).join(' / ') : ''),
-  [bookmarks, folderPaths]);
-  const matchingBookmarkIds = useMemo(() => searchBookmarkIds(bookmarkSearchIndex, bookmarkSearch), [bookmarkSearchIndex, bookmarkSearch]);
+  const hasBookmarkSearch = activeTab === 'bookmarks' && bookmarkSearch.trim().length > 0;
+  const bookmarkSearchIndex = useMemo(() => hasBookmarkSearch ? buildBookmarkSearchIndex(bookmarks, bookmark =>
+    bookmark.folderId ? (folderPaths.get(bookmark.folderId) ?? []).map(folder => folder.name).join(' / ') : '') : null,
+  [bookmarks, folderPaths, hasBookmarkSearch]);
+  const matchingBookmarkIds = useMemo(() => bookmarkSearchIndex ? searchBookmarkIds(bookmarkSearchIndex, bookmarkSearch) : null, [bookmarkSearchIndex, bookmarkSearch]);
   const [selectedBmIds, setSelectedBmIds] = useState<string[]>([]);
 
   // Modals for Bookmark Manager
@@ -212,7 +210,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
       list = list.filter(bm => bm.folderId === selectedFolderId);
     }
 
-    list = list.filter(bm => matchingBookmarkIds.has(bm.id));
+    if (matchingBookmarkIds) list = list.filter(bm => matchingBookmarkIds.has(bm.id));
 
     return list;
   }, [bookmarks, selectedFolderId, matchingBookmarkIds, bookmarkSearch]);
@@ -1483,16 +1481,18 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 mb-3">
               {t('managerMaterialMode')}
             </h4>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {([
                 { id: 'light-glass', label: 'managerLightGlass' },
                 { id: 'dark-glass', label: 'managerDarkGlass' },
+                { id: 'auto', label: 'managerAutoAppearance' },
               ] as const).map(mode => (
                 <button
                   key={mode.id}
                   type="button"
                   onClick={() => onUpdateSettings({ appearanceMode: mode.id as AppearanceMode })}
                   aria-label={t('managerSelectAppearance', { name: t(mode.label) })}
+                  aria-pressed={(userSettings.appearanceMode === 'reduced-transparency' ? 'light-glass' : userSettings.appearanceMode) === mode.id}
                   className={`p-4 rounded-2xl text-left border transition-all cursor-pointer ${
                     (userSettings.appearanceMode === 'reduced-transparency' ? 'light-glass' : userSettings.appearanceMode) === mode.id
                       ? 'border-sky-500 bg-sky-500/10 shadow-xs'
@@ -1502,6 +1502,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-100 block mb-1">
                     {t(mode.label)}
                   </span>
+                  {mode.id === 'auto' && <span className="text-xs text-slate-500 dark:text-slate-400">{t('managerFollowSystem')}</span>}
                 </button>
               ))}
             </div>

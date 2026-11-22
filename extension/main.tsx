@@ -9,8 +9,8 @@ import { createExtensionStorage } from './storage/local';
 import { applicationStorage, configureApplicationStorage, mutateStorage } from '../src/services/application-storage';
 import { readUserLocale } from '../src/services/user-locale';
 import { createTranslator } from '../src/i18n';
+import App from '../src/App';
 
-const App = lazy(() => import('../src/App'));
 const CapturePage = lazy(() => import('./capture/CapturePage'));
 
 function acknowledged() {
@@ -65,9 +65,7 @@ function ExtensionApp() {
   </Suspense>;
   return (
     <>
-      <Suspense fallback={<p role="status">{t('extensionOpening')}</p>}>
-        <App />
-      </Suspense>
+      <App />
       <button
         type="button"
         className="extension-privacy-launcher"
@@ -88,7 +86,6 @@ async function start() {
   const language = readUserLocale();
   const t = createTranslator(language);
   document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
-  root.render(<p role="status">{t('extensionReading')}</p>);
   try {
     const chrome = (globalThis as typeof globalThis & {
       chrome: { storage: { local: Parameters<typeof createExtensionStorage>[0]['area'];

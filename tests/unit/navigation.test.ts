@@ -10,7 +10,7 @@ const noop = () => {};
 test('top navigation has exactly two primary destinations and a visible language control', () => {
   for (const language of ['zh', 'en']) {
     const html = renderToStaticMarkup(React.createElement(TopNavigation, {
-      management: true, language, dark: false, onHome: noop, onManagement: noop, onLanguage: noop, onTheme: noop,
+      management: true, language, appearanceMode: 'light-glass', onHome: noop, onManagement: noop, onLanguage: noop, onTheme: noop,
     }));
     assert.equal((html.match(/<button/g) ?? []).length, 5);
     assert.match(html, language === 'en' ? /Switch to Chinese/ : /切换为英文/);

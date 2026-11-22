@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import { buildBookmarkSearchIndex, searchBookmarkIds } from '../../src/services/bookmark-search';
 
 test('shared search covers all fields without filtering URLs, sorting or indexing legacy tags', () => {
@@ -31,4 +31,31 @@ test('query uses immutable indexed text and rebuilding picks up edited titles an
   assert.deepEqual([...searchBookmarkIds(after, 'xxyh')], []);
   assert.deepEqual([...searchBookmarkIds(after, 'gongzuo')], []);
   assert.equal(item.title, '中文工具');
+});
+
+test('rebuilding the same bookmark snapshot reuses normalized fields across search consumers', () => {
+  const item = { id: 'reuse', title: '缓存复用中文', url: 'https://reuse.test/', domain: 'reuse.test', notes: '私人备注', keywords: ['工作'] };
+  const normalize = mock.method(String.prototype, 'normalize');
+  try {
+    const first = buildBookmarkSearchIndex([item], () => '工作资料');
+    const initialCalls = normalize.mock.callCount();
+    assert.ok(initialCalls > 0);
+    const second = buildBookmarkSearchIndex([item], () => '工作资料');
+    assert.equal(normalize.mock.callCount(), initialCalls, 'A second consumer does not repeat normalization or pinyin indexing');
+    assert.deepEqual(second, first);
+    assert.notEqual(second.get('reuse'), first.get('reuse'), 'Consumers own their indexed fields');
+  } finally { normalize.mock.restore(); }
+});
+
+test('cached search fields cannot be corrupted by callers and detect in-place keyword edits', () => {
+  const item = { id: 'mutable', title: '中文工具', url: 'https://mutable.test/', domain: 'mutable.test', keywords: ['工作'] };
+  const before = buildBookmarkSearchIndex([item], () => '资料');
+  before.get(item.id)!.fields.title.push('corrupted-title');
+  before.get(item.id)!.searchFields.push('corrupted-result');
+  const after = buildBookmarkSearchIndex([item], () => '资料');
+  assert.deepEqual([...searchBookmarkIds(after, 'corrupted')], []);
+  item.keywords[0] = '生活';
+  const edited = buildBookmarkSearchIndex([item], () => '资料');
+  assert.deepEqual([...searchBookmarkIds(edited, 'shenghuo')], [item.id]);
+  assert.deepEqual([...searchBookmarkIds(edited, 'gongzuo')], []);
 });

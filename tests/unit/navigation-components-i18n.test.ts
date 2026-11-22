@@ -43,10 +43,29 @@ function text(tree: React.ReactNode): string {
 const TopNavigation = component('common/TopNavigation', 'TopNavigation');
 const ManagementShell = component('account/ManagementShell', 'ManagementShell');
 
+test('theme button cycles day, night and automatic preferences in both locales', () => {
+  for (const language of ['zh', 'en']) {
+    for (const [appearanceMode, label, next] of [
+      ['light-glass', language === 'zh' ? '切换夜间模式' : 'Night mode', 'dark-glass'],
+      ['dark-glass', language === 'zh' ? '切换自动模式' : 'Auto mode', 'auto'],
+      ['auto', language === 'zh' ? '切换日间模式' : 'Day mode', 'light-glass'],
+      ['reduced-transparency', language === 'zh' ? '切换夜间模式' : 'Night mode', 'dark-glass'],
+    ]) {
+      const changes: string[] = [];
+      const tree = TopNavigation({ management: false, language, appearanceMode,
+        onHome() {}, onManagement() {}, onLanguage() {}, onTheme: (mode: string) => changes.push(mode) });
+      const button = nodes(tree).find(node => node.type === 'button' && node.props['aria-label'] === label);
+      assert.ok(button, `${appearanceMode} exposes its next mode`);
+      button.props.onClick();
+      assert.deepEqual(changes, [next]);
+    }
+  }
+});
+
 test('top navigation resolves en-US and keeps the language control in both locales', () => {
   const switched: string[] = [];
   const props = {
-    management: false, language: 'en-US', dark: false,
+    management: false, language: 'en-US', appearanceMode: 'light-glass',
     onHome: () => switched.push('home'), onManagement: () => switched.push('management'),
     onLanguage: () => switched.push('language'), onTheme: () => switched.push('theme'),
   };

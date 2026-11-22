@@ -157,6 +157,8 @@ export const managementMessages = {
   managerMaterialMode: { zh: '外观模式', en: 'Appearance mode' },
   managerLightGlass: { zh: '日间模式', en: 'Day mode' },
   managerDarkGlass: { zh: '夜间模式', en: 'Night mode' },
+  managerAutoAppearance: { zh: '自动', en: 'Auto' },
+  managerFollowSystem: { zh: '跟随系统', en: 'Follow system' },
   managerReducedTransparency: { zh: '降低透明度', en: 'Reduced transparency' },
   managerSelectAppearance: { zh: '选择外观：{name}', en: 'Select appearance: {name}' },
   managerDesktopBackground: { zh: '桌面背景', en: 'Desktop wallpaper' },

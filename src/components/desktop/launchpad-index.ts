@@ -9,6 +9,14 @@ export interface LaunchpadEntry {
   searchFields: string[];
 }
 
+interface LaunchpadSnapshot {
+  source: string;
+  bookmarks: Bookmark[];
+  entries: LaunchpadEntry[];
+}
+const snapshots = new WeakMap<Bookmark[], WeakMap<Folder[], LaunchpadSnapshot>>();
+const copyEntries = (entries: LaunchpadEntry[]) => entries.map(entry => ({ ...entry, searchFields: [...entry.searchFields] }));
+
 function validUrl(url: string): boolean {
   if (!/^https?:\/\//i.test(url) || /[\s\u0000-\u001f\u007f]/u.test(url)) return false;
   try {
@@ -20,6 +28,16 @@ function validUrl(url: string): boolean {
 }
 
 export function buildLaunchpadIndex(bookmarks: Bookmark[], folders: Folder[]): LaunchpadEntry[] {
+  const source = JSON.stringify([
+    bookmarks.map(bookmark => [bookmark.id, bookmark.title, bookmark.url, bookmark.domain,
+      bookmark.notes, bookmark.keywords, bookmark.folderId]),
+    folders.map(folder => [folder.id, folder.name, folder.parentId]),
+  ]);
+  let byFolders = snapshots.get(bookmarks);
+  const cached = byFolders?.get(folders);
+  if (cached?.source === source && cached.bookmarks.every((bookmark, index) => bookmark === bookmarks[index])) {
+    return copyEntries(cached.entries);
+  }
   const folderById = new Map(folders.map(folder => [folder.id, folder]));
   const pathCache = new Map<string, string>();
   function archivePath(folderId: string | undefined): string {
@@ -56,11 +74,14 @@ export function buildLaunchpadIndex(bookmarks: Bookmark[], folders: Folder[]): L
     });
   }
   // Stable ties preserve separate records and never consult archive or desktop order.
-  return entries.sort((a, b) => {
+  entries.sort((a, b) => {
     if (a.initialLetter === '#' && b.initialLetter !== '#') return 1;
     if (a.initialLetter !== '#' && b.initialLetter === '#') return -1;
     return a.sortKey.localeCompare(b.sortKey, 'en', { sensitivity: 'base' });
   });
+  if (!byFolders) { byFolders = new WeakMap(); snapshots.set(bookmarks, byFolders); }
+  byFolders.set(folders, { source, bookmarks: [...bookmarks], entries });
+  return copyEntries(entries);
 }
 
 export function searchLaunchpad(index: LaunchpadEntry[], query: string): LaunchpadEntry[] {

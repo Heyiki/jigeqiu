@@ -11,6 +11,21 @@ export interface BookmarkSearchEntry {
 
 export type BookmarkSearchIndex = ReadonlyMap<string, BookmarkSearchEntry>;
 
+// Library snapshots are shared by desktop search and Launchpad. Weak keys let old
+// snapshots go away; source text also detects callers editing an object in place.
+const bookmarkEntries = new WeakMap<SearchableBookmark, { source: string; entry: BookmarkSearchEntry }>();
+
+function copyEntry(entry: BookmarkSearchEntry): BookmarkSearchEntry {
+  const fields = entry.fields;
+  return {
+    fields: {
+      title: [...fields.title], url: [...fields.url], domain: [...fields.domain],
+      notes: [...fields.notes], keywords: [...fields.keywords], path: [...fields.path],
+    },
+    searchFields: [...entry.searchFields],
+  };
+}
+
 export function normalizeSearchText(text: string): string {
   return text.normalize('NFKC').toLowerCase().replace(/\s+/gu, ' ').trim();
 }
@@ -33,15 +48,23 @@ export function buildBookmarkSearchIndex<T extends SearchableBookmark>(
     return result;
   };
   return new Map(bookmarks.map(bookmark => {
+    const path = pathFor(bookmark);
+    const source = JSON.stringify([
+      bookmark.title, bookmark.url, bookmark.domain, bookmark.notes ?? '', bookmark.keywords ?? [], path,
+    ]);
+    const cached = bookmarkEntries.get(bookmark);
+    if (cached?.source === source) return [bookmark.id, copyEntry(cached.entry)];
     const fields: BookmarkSearchEntry['fields'] = {
       title: indexedText(bookmark.title),
       url: indexedText(bookmark.url),
       domain: indexedText(bookmark.domain),
       notes: indexedText(bookmark.notes ?? ''),
       keywords: (bookmark.keywords ?? []).flatMap(indexedText),
-      path: indexedText(pathFor(bookmark)),
+      path: indexedText(path),
     };
-    return [bookmark.id, { fields, searchFields: [...new Set(Object.values(fields).flat())].filter(Boolean) }];
+    const entry = { fields, searchFields: [...new Set(Object.values(fields).flat())].filter(Boolean) };
+    bookmarkEntries.set(bookmark, { source, entry });
+    return [bookmark.id, copyEntry(entry)];
   }));
 }
 

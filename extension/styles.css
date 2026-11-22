@@ -1,2 +1,7 @@
 @import '../src/index.css';
 @source "../src";
+
+/* Keep the initial document consistent with the desktop while storage initializes. */
+html {
+  background-color: var(--desktop-launchpad);
+}
