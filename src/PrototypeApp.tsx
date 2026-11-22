@@ -76,7 +76,10 @@ export default function PrototypeApp() {
         const next = storage.getUserSettings();
         setSettings(current => current.language === language
           && current.wallpaperPreset === next.wallpaperPreset && current.customWallpaperId === next.customWallpaperId
-          ? current : { ...current, language, wallpaperPreset: next.wallpaperPreset, customWallpaperId: next.customWallpaperId });
+          && current.backgroundType === next.backgroundType
+          && JSON.stringify(current.gradientBackground) === JSON.stringify(next.gradientBackground)
+          ? current : { ...current, language, wallpaperPreset: next.wallpaperPreset, customWallpaperId: next.customWallpaperId,
+            backgroundType: next.backgroundType, gradientBackground: next.gradientBackground });
       } catch { /* Keep the rendered background if preferences cannot be read. */ }
       try { setLibraryChanged(storage.hasLibraryChanges()); }
       catch { setLibraryChanged(true); }
@@ -637,7 +640,8 @@ export default function PrototypeApp() {
   };
 
   return (
-    <WallpaperBackground preset={settings.wallpaperPreset} appearance={appearanceMode} customWallpaperId={settings.customWallpaperId}>
+    <WallpaperBackground preset={settings.wallpaperPreset} appearance={appearanceMode} customWallpaperId={settings.customWallpaperId}
+      backgroundType={settings.backgroundType} gradientBackground={settings.gradientBackground}>
       <TopNavigation management={currentTab !== 'desktop'} language={settings.language}
         appearanceMode={settings.appearanceMode}
         onHome={() => { navigate({ page: 'desktop' }); setActiveCollectionDetail(null); }}

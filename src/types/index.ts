@@ -196,10 +196,17 @@ export type AppearanceMode = 'light-glass' | 'dark-glass' | 'auto' | 'reduced-tr
 export type WallpaperPreset = 'cyan-lake' | 'snow-mountain' | 'misty-mountains' | 'corner-tower' | 'green-lake' | 'arch-sky' | 'coastal-dusk' | 'botanic-sage' | 'custom';
 // Retained for older saved preferences; rendering always uses cover.
 export type WallpaperFit = 'contain' | 'cover';
+export interface GradientBackground {
+  start: string;
+  end: string;
+  angle: number;
+}
 
 export interface UserSettings {
   appearanceMode: AppearanceMode;
   wallpaperPreset: WallpaperPreset;
+  backgroundType?: 'wallpaper' | 'gradient';
+  gradientBackground?: GradientBackground;
   customWallpaperId?: string;
   customWallpaperFit?: WallpaperFit;
   desktopViewMode: DesktopViewMode;

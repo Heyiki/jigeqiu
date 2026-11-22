@@ -1,6 +1,17 @@
 import type { MessageTable } from './index';
 
 export const wallpaperMessages = {
+  backgroundType: { zh: '背景类型', en: 'Background type' },
+  backgroundWallpaper: { zh: '壁纸', en: 'Wallpaper' },
+  backgroundGradient: { zh: '渐变', en: 'Gradient' },
+  gradientMistBlue: { zh: '雾蓝', en: 'Misty blue' },
+  gradientSunset: { zh: '暮霞', en: 'Sunset glow' },
+  gradientSelect: { zh: '选择渐变：{name}', en: 'Select gradient: {name}' },
+  gradientCustom: { zh: '自定义渐变', en: 'Custom gradient' },
+  gradientStart: { zh: '起始颜色', en: 'Start color' },
+  gradientEnd: { zh: '结束颜色', en: 'End color' },
+  gradientDirection: { zh: '渐变方向', en: 'Gradient direction' },
+  gradientSaveFailed: { zh: '背景设置未保存，请重试。', en: 'Background settings were not saved. Please retry.' },
   wallpaperBuiltins: { zh: '内置背景', en: 'Built-in backgrounds' },
   wallpaperMyImages: { zh: '我的背景', en: 'My backgrounds' },
   wallpaperAdd: { zh: '添加图片', en: 'Add image' },
