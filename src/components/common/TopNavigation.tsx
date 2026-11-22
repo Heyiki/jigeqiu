@@ -14,12 +14,13 @@ export function TopNavigation({ management, language, appearanceMode, onHome, on
   const nextLabel = t(nextMode === 'auto' ? 'autoMode' : nextMode === 'dark-glass' ? 'darkMode' : 'lightMode');
   const currentLabel = t(appearanceMode === 'auto' ? 'appearanceAuto' : appearanceMode === 'dark-glass' ? 'appearanceNight' : 'appearanceDay');
   const ThemeIcon = appearanceMode === 'auto' ? Monitor : appearanceMode === 'dark-glass' ? Moon : Sun;
-  return <header className="relative z-30 flex min-h-14 w-full items-center justify-between gap-1 px-2 py-2 sm:gap-3 sm:px-8">
+  return <>
+  <header className={`${management ? 'pointer-events-none fixed inset-x-0 top-0 h-[61px]' : 'relative'} z-30 flex min-h-14 w-full items-center justify-between gap-1 px-2 py-2 sm:gap-3 sm:px-8`}>
     <button type="button" onClick={onHome} title={t('navigationHomeTitle')} aria-label={t('navigationHomeLabel')}
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
+      className="pointer-events-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sky-500">
       <img src={`${import.meta.env?.BASE_URL ?? '/'}brand/logo-a2-equator.png`} alt="" aria-hidden="true" width={40} height={40} className="block h-10 w-10 object-contain" />
     </button>
-    <div className="liquid-glass flex min-w-0 items-center gap-0.5 rounded-lg border border-white/50 bg-white/60 p-1 shadow-sm dark:border-white/10 dark:bg-white/5 sm:gap-1">
+    <div className="liquid-glass pointer-events-auto flex min-w-0 items-center gap-0.5 rounded-lg border border-white/50 bg-white/60 p-1 shadow-sm dark:border-white/10 dark:bg-white/5 sm:gap-1">
       <nav aria-label={t('primaryNavigation')} className="flex items-center gap-0.5">
         {[{ active: !management, action: onHome, label: t('desktopNavigation'), Icon: Home },
           { active: management, action: onManagement, label: t('managementNavigation'), Icon: Library }].map(item =>
@@ -43,5 +44,7 @@ export function TopNavigation({ management, language, appearanceMode, onHome, on
         <ThemeIcon size={15} />
       </button>
     </div>
-  </header>;
+  </header>
+  {management && <div aria-hidden="true" className="h-[61px] shrink-0" />}
+  </>;
 }

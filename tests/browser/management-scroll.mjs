@@ -27,6 +27,10 @@ try {
       await page.goto(`${base}#/settings/appearance`);
       await page.reload();
       await page.getByRole('heading', { name: '外观', exact: true, level: 1 }).waitFor();
+      const header = page.getByRole('banner');
+      const initialHeader = await header.boundingBox();
+      const logo = header.getByRole('button', { name: '记个球首页', exact: true }).locator('img');
+      assert.equal((await logo.boundingBox()).width, 40, 'Logo retains its current size');
       const button = page.getByRole('button', { name: '返回顶部', exact: true });
       assert.equal(await button.count(), 0, 'Hidden near top and absent from accessibility tree');
       assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement, '::-webkit-scrollbar').width), '9px');
@@ -36,6 +40,29 @@ try {
       assert.equal(await button.count(), 0);
       await page.evaluate(() => window.scrollTo(0, 600));
       await button.waitFor();
+      const scrolledHeader = await header.boundingBox();
+      assert.equal(scrolledHeader.y, 0, 'Management header remains at the viewport top while scrolling');
+      assert.equal(scrolledHeader.height, initialHeader.height, 'Pinning does not change navigation height');
+      const surface = await header.evaluate(el => {
+        const style = getComputedStyle(el);
+        return { background: style.backgroundColor, shadow: style.boxShadow, blur: style.backdropFilter };
+      });
+      assert.deepEqual(surface, { background: 'rgba(0, 0, 0, 0)', shadow: 'none', blur: 'none' },
+        'Only the floating controls have a surface; no full-width bar is painted');
+      const language = header.getByRole('button', { name: '切换为英文', exact: true });
+      assert.ok(await language.evaluate(el => {
+        const bounds = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2));
+      }), 'Header controls stay visible and clickable above scrolled content');
+      const capsule = header.locator('.liquid-glass');
+      assert.notEqual(await capsule.evaluate(el => getComputedStyle(el).borderRadius), '0px', 'Existing capsule styling remains');
+      assert.notEqual(await capsule.evaluate(el => getComputedStyle(el).backdropFilter), 'none', 'Capsule retains its own glass surface');
+      assert.ok(await header.evaluate(el => {
+        const logo = el.querySelector('button').getBoundingClientRect();
+        const capsule = el.querySelector('.liquid-glass').getBoundingClientRect();
+        const hit = document.elementFromPoint((logo.right + capsule.left) / 2, logo.y + logo.height / 2);
+        return hit && !el.contains(hit);
+      }), 'Transparent space between floating controls does not block page interactions');
       const box = await button.boundingBox();
       assert.equal(box.width, 40);
       assert.equal(box.height, 40);
@@ -56,6 +83,7 @@ try {
       await page.emulateMedia({ reducedMotion: 'no-preference' });
       await page.evaluate(() => { window.location.hash = '#/'; });
       await page.waitForFunction(() => !document.documentElement.classList.contains('management-scroll'));
+      assert.equal(await header.evaluate(el => getComputedStyle(el).position), 'relative', 'Desktop keeps its original navigation positioning');
       assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement, '::-webkit-scrollbar').width), '6px');
       assert.equal(await button.count(), 0);
     }
