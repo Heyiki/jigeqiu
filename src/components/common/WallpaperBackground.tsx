@@ -1,12 +1,15 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { readWallpaper, subscribeWallpaperChange, visibleWallpaper } from '../../services/custom-wallpaper';
-import { WallpaperPreset, AppearanceMode } from '../../types';
+import { WallpaperPreset, AppearanceMode, GradientBackground } from '../../types';
+import { gradientImage, normalizeGradient } from '../../services/gradient-background';
 import './wallpaper.css';
 
 interface WallpaperBackgroundProps {
   preset: WallpaperPreset;
   appearance: AppearanceMode;
   customWallpaperId?: string;
+  backgroundType?: 'wallpaper' | 'gradient';
+  gradientBackground?: GradientBackground;
   children: React.ReactNode;
 }
 
@@ -15,14 +18,17 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
   appearance,
   children,
   customWallpaperId,
+  backgroundType,
+  gradientBackground,
 }) => {
+  const isGradient = backgroundType === 'gradient';
   const [custom, setCustom] = useState<{ id: string; url: string } | null>(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => subscribeWallpaperChange(() => setRevision(value => value + 1)), []);
   useEffect(() => {
     let cancelled = false;
     let url: string | undefined;
-    if (preset === 'custom' && customWallpaperId) {
+    if (!isGradient && preset === 'custom' && customWallpaperId) {
       void readWallpaper(customWallpaperId).then(blob => {
         if (cancelled) return;
         if (!blob) { setCustom(null); return; }
@@ -31,8 +37,8 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
       }).catch(() => { if (!cancelled) setCustom(null); });
     }
     return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
-  }, [preset, customWallpaperId, revision]);
-  const customUrl = preset === 'custom' && custom && custom.id === customWallpaperId ? custom.url : undefined;
+  }, [preset, customWallpaperId, revision, isGradient]);
+  const customUrl = !isGradient && preset === 'custom' && custom && custom.id === customWallpaperId ? custom.url : undefined;
   const isDark = appearance === 'dark-glass';
   const isReduced = appearance === 'reduced-transparency';
 
@@ -44,8 +50,11 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
   }, [isDark, isReduced]);
 
   return (
-    <div data-wallpaper={visibleWallpaper(preset)} data-custom-wallpaper={customUrl ? '' : undefined}
-      style={customUrl ? {
+    <div data-wallpaper={isGradient ? undefined : visibleWallpaper(preset)} data-background-type={isGradient ? 'gradient' : 'wallpaper'} data-custom-wallpaper={customUrl ? '' : undefined}
+      style={isGradient ? {
+        '--wallpaper-image': gradientImage(gradientBackground),
+        '--wallpaper-base': normalizeGradient(gradientBackground).start,
+      } as React.CSSProperties : customUrl ? {
         '--wallpaper-image': `url("${customUrl}")`,
         '--wallpaper-base': '#24282a',
       } as React.CSSProperties : undefined} className="wallpaper-root relative isolate min-h-screen w-full overflow-x-hidden">

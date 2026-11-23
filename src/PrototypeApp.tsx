@@ -4,34 +4,30 @@ import { readUserLocale } from './services/user-locale';
 import {
   Bookmark,
   Folder,
-  Category,
-  Tag,
   Collection,
   SearchEngine,
   PlatformSite,
-  Submission,
   UserSettings,
   DesktopAppWindow,
 } from './types';
 import { storage } from './services/storage';
 import { subscribeWallpaperChange } from './services/custom-wallpaper';
 import { useHashRoute } from './hooks/useHashRoute';
+import { useAppearanceMode } from './hooks/useAppearanceMode';
 import { WallpaperBackground } from './components/common/WallpaperBackground';
 import { Toast, ToastMessage } from './components/common/Toast';
 import { BottomDock } from './components/dock/BottomDock';
 import { SpotlightSearch } from './components/desktop/SpotlightSearch';
 import { DesktopView } from './components/desktop/DesktopView';
+import { Launchpad } from './components/desktop/Launchpad';
 import { DesktopGuide } from './components/desktop/DesktopGuide';
 import { appShortcut, createDoubleShiftTracker, EDITABLE_SELECTOR } from './components/desktop/app-shortcuts';
 import { DesktopWindow } from './components/desktop/DesktopWindow';
 import { FolderModal } from './components/desktop/FolderModal';
 import { QuickAddModal } from './components/desktop/QuickAddModal';
 import { BookmarkDialog } from './components/common/BookmarkDialog';
-import { CalculatorTool } from './components/plugins/CalculatorTool';
-import { JsonFormatterTool } from './components/plugins/JsonFormatterTool';
-import { WordCounterTool } from './components/plugins/WordCounterTool';
-import { UserCenterView } from './components/account/UserCenterView';
-import { ManagementShell, type ManagementSection } from './components/account/ManagementShell';
+import { ManagementShell, ManagementContentPlaceholder, type ManagementSection } from './components/account/ManagementShell';
+import { loadManagement, loadTrash, preloadManagementSection } from './components/account/management-loading';
 import { TopNavigation } from './components/common/TopNavigation';
 import { DesktopAttribution } from './components/common/DesktopAttribution';
 import { DesktopFolderModal } from './components/desktop/DesktopFolderModal';
@@ -39,7 +35,6 @@ import type { Layout } from './domain/assets/model';
 import type { AssetAction } from './domain/assets/commands';
 import { bookmarkSaveError } from './services/bookmark-input';
 import { preferenceSaveError } from './services/preference-save-error';
-import { BookmarkTrashView } from './components/account/BookmarkTrashView';
 import { LibraryChangeNotice } from './components/common/LibraryChangeNotice';
 import { commitAndRefresh } from './services/library-mutation';
 import { createTranslator, resolveLocale } from './i18n';
@@ -48,24 +43,27 @@ import { OnboardingPanel } from './components/onboarding/OnboardingPanel';
 import { TaskHint } from './components/onboarding/TaskHint';
 import type { OnboardingEntry, OnboardingTaskContext } from './components/onboarding/types';
 
-// Original visual prototype, retained while features are connected in small slices.
-const loadLaunchpad = () => import('./components/desktop/Launchpad').then(module => ({ default: module.Launchpad }));
-const Launchpad = React.lazy(loadLaunchpad);
+const loadTools = () => import('./components/plugins/BuiltinTools');
+const UserCenterView = React.lazy(loadManagement);
+const BookmarkTrashView = React.lazy(loadTrash);
+const BuiltinTools = React.lazy(loadTools);
 
 export default function PrototypeApp() {
   // Capture first-use eligibility before storage getters initialize defaults.
   const onboarding = useOnboarding();
   // Core Application State
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>(() => storage.getBookmarks());
-  const [folders, setFolders] = useState<Folder[]>(() => storage.getFolders());
-  const [categories, setCategories] = useState<Category[]>(() => storage.getCategories());
-  const [tags, setTags] = useState<Tag[]>(() => storage.getTags());
-  const [collections, setCollections] = useState<Collection[]>(() => storage.getCollections());
-  const [bookmarkTrash, setBookmarkTrash] = useState(() => storage.getBookmarkTrash());
-  const [folderTrash, setFolderTrash] = useState(() => storage.getFolderTrash());
-  const [searchEngines, setSearchEngines] = useState<SearchEngine[]>(() => storage.getSearchEngines());
-  const [submissions, setSubmissions] = useState<Submission[]>(() => storage.getSubmissions());
-  const [settings, setSettings] = useState<UserSettings>(() => storage.getUserSettings());
+  const [workbench, setWorkbench] = useState(() => storage.readWorkbenchSnapshot());
+  const { bookmarks, folders, categories, collections, bookmarkTrash, folderTrash, searchEngines, settings, desktopLayout } = workbench;
+  const appearanceMode = useAppearanceMode(settings.appearanceMode);
+  const setBookmarks = (value: Bookmark[]) => setWorkbench(current => ({ ...current, bookmarks: value }));
+  const setFolders = (value: Folder[]) => setWorkbench(current => ({ ...current, folders: value }));
+  const setCollections = (value: Collection[]) => setWorkbench(current => ({ ...current, collections: value }));
+  const setSearchEngines = (value: SearchEngine[]) => setWorkbench(current => ({ ...current, searchEngines: value }));
+  const setDesktopLayout = (value: Layout) => setWorkbench(current => ({ ...current, desktopLayout: value }));
+  const setSettings = (value: React.SetStateAction<UserSettings>) => setWorkbench(current => {
+    const nextSettings = typeof value === 'function' ? value(current.settings) : value;
+    return Object.is(nextSettings, current.settings) ? current : { ...current, settings: nextSettings };
+  });
   const t = createTranslator(settings.language);
   useEffect(() => {
     document.documentElement.lang = resolveLocale(settings.language) === 'en' ? 'en' : 'zh-CN';
@@ -78,7 +76,10 @@ export default function PrototypeApp() {
         const next = storage.getUserSettings();
         setSettings(current => current.language === language
           && current.wallpaperPreset === next.wallpaperPreset && current.customWallpaperId === next.customWallpaperId
-          ? current : { ...current, language, wallpaperPreset: next.wallpaperPreset, customWallpaperId: next.customWallpaperId });
+          && current.backgroundType === next.backgroundType
+          && JSON.stringify(current.gradientBackground) === JSON.stringify(next.gradientBackground)
+          ? current : { ...current, language, wallpaperPreset: next.wallpaperPreset, customWallpaperId: next.customWallpaperId,
+            backgroundType: next.backgroundType, gradientBackground: next.gradientBackground });
       } catch { /* Keep the rendered background if preferences cannot be read. */ }
       try { setLibraryChanged(storage.hasLibraryChanges()); }
       catch { setLibraryChanged(true); }
@@ -101,27 +102,11 @@ export default function PrototypeApp() {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
-  const [desktopLayout, setDesktopLayout] = useState<Layout | null>(() => {
-    try { return storage.getDesktopLayout(); } catch { return null; }
-  });
   const [activeDesktopFolderId, setActiveDesktopFolderId] = useState<string | null>(null);
   const [quickAddDesktopFolderId, setQuickAddDesktopFolderId] = useState<string | null>(null);
 
   const refreshLibrary = () => {
-    const next = {
-      bookmarks: storage.getBookmarks(), folders: storage.getFolders(), collections: storage.getCollections(),
-      bookmarkTrash: storage.getBookmarkTrash(), folderTrash: storage.getFolderTrash(),
-      settings: storage.getUserSettings(), desktopLayout: storage.getDesktopLayout(),
-      searchEngines: storage.getSearchEngines(),
-    };
-    setBookmarks(next.bookmarks);
-    setFolders(next.folders);
-    setCollections(next.collections);
-    setBookmarkTrash(next.bookmarkTrash);
-    setFolderTrash(next.folderTrash);
-    setSettings(next.settings);
-    setDesktopLayout(next.desktopLayout);
-    setSearchEngines(next.searchEngines);
+    setWorkbench(storage.readWorkbenchSnapshot());
   };
   const mutateLibrary = <T,>(commit: () => T): Promise<T> => commitAndRefresh(commit, refreshLibrary);
   const desktopAction = async (actions: Extract<AssetAction, { type: `desktop.${string}` }>[]) => {
@@ -141,8 +126,10 @@ export default function PrototypeApp() {
   const accountInitialTab = route.page === 'management' ? route.section : lastManagementSection;
   useEffect(() => {
     if (route.page === 'management') setLastManagementSection(route.section);
+    if (route.page === 'management') void preloadManagementSection(route.section);
   }, [route]);
   const navigateManagement = (section?: ManagementSection) => {
+    void preloadManagementSection(section ?? accountInitialTab);
     navigate({ page: 'management', section: section ?? accountInitialTab });
     setActiveCollectionDetail(null);
   };
@@ -153,17 +140,6 @@ export default function PrototypeApp() {
   const [quickAddInitialUrl, setQuickAddInitialUrl] = useState<string | undefined>(undefined);
   const [quickAddFolderId, setQuickAddFolderId] = useState<string | undefined>(undefined);
   const isLaunchpadOpen = route.page === 'launchpad';
-  useEffect(() => {
-    if (route.page !== 'desktop') return;
-    // Warm code and pinyin dependencies without mounting the drawer or building its index.
-    const warm = () => { void loadLaunchpad().catch(() => {}); };
-    if (typeof window.requestIdleCallback === 'function') {
-      const job = window.requestIdleCallback(warm, { timeout: 1500 });
-      return () => window.cancelIdleCallback(job);
-    }
-    const timer = window.setTimeout(warm, 200);
-    return () => window.clearTimeout(timer);
-  }, [route.page]);
   const [launchpadBrowse, setLaunchpadBrowse] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -196,6 +172,19 @@ export default function PrototypeApp() {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isJsonFormatterOpen, setIsJsonFormatterOpen] = useState(false);
   const [isWordCounterOpen, setIsWordCounterOpen] = useState(false);
+  const [toolsMounted, setToolsMounted] = useState(false);
+  const toolsOpen = isCalculatorOpen || isJsonFormatterOpen || isWordCounterOpen;
+  useEffect(() => { if (toolsOpen) setToolsMounted(true); }, [toolsOpen]);
+  useEffect(() => {
+    // Optional panels warm after the desktop paints; neither startup nor Launchpad depends on them.
+    const warm = () => { void Promise.allSettled([loadManagement(), loadTrash(), loadTools()]); };
+    if (typeof window.requestIdleCallback === 'function') {
+      const job = window.requestIdleCallback(warm, { timeout: 3000 });
+      return () => window.cancelIdleCallback(job);
+    }
+    const timer = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Desktop App Windows State (Multi-window Floating Web Apps)
   const [appWindows, setAppWindows] = useState<DesktopAppWindow[]>([]);
@@ -235,14 +224,7 @@ export default function PrototypeApp() {
     changed: () => storage.hasLibraryChanges(),
     synchronize: () => {
       const next = storage.acceptLibrarySnapshot();
-      setBookmarks(next.bookmarks);
-      setFolders(next.folders);
-      setCollections(next.collections);
-      setBookmarkTrash(next.bookmarkTrash);
-      setFolderTrash(next.folderTrash);
-      setSettings(next.settings);
-      setDesktopLayout(next.desktopLayout);
-      setSearchEngines(next.searchEngines);
+      setWorkbench(current => ({ ...current, ...next }));
       setLibraryChanged(false);
     },
   });
@@ -658,13 +640,15 @@ export default function PrototypeApp() {
   };
 
   return (
-    <WallpaperBackground preset={settings.wallpaperPreset} appearance={settings.appearanceMode} customWallpaperId={settings.customWallpaperId}>
+    <WallpaperBackground preset={settings.wallpaperPreset} appearance={appearanceMode} customWallpaperId={settings.customWallpaperId}
+      backgroundType={settings.backgroundType} gradientBackground={settings.gradientBackground}>
       <TopNavigation management={currentTab !== 'desktop'} language={settings.language}
-        dark={settings.appearanceMode === 'dark-glass'}
+        appearanceMode={settings.appearanceMode}
         onHome={() => { navigate({ page: 'desktop' }); setActiveCollectionDetail(null); }}
         onManagement={() => navigateManagement()}
+        onManagementIntent={() => { void preloadManagementSection(accountInitialTab); }}
         onLanguage={() => handleUpdateSettings({ language: resolveLocale(settings.language) === 'en' ? 'zh' : 'en' })}
-        onTheme={() => handleUpdateSettings({ appearanceMode: settings.appearanceMode === 'dark-glass' ? 'light-glass' : 'dark-glass' })} />
+        onTheme={mode => handleUpdateSettings({ appearanceMode: mode })} />
       <LibraryChangeNotice visible={libraryChanged} language={settings.language} onReload={() => window.location.reload()} />
 
       {/* Main View Router */}
@@ -676,6 +660,12 @@ export default function PrototypeApp() {
         onClick={handleDesktopBackgroundClick}
         className={`flex-1 flex flex-col ${currentTab === 'desktop' ? 'touch-none' : settings.showDock !== false ? 'pb-16 sm:pb-24' : 'pb-4 sm:pb-6'} cursor-default`}
       >
+        <React.Suspense fallback={currentTab === 'account' ? <ManagementShell section={accountInitialTab}
+          showDock={settings.showDock !== false} dockIconSize={settings.dockIconSize}
+          language={settings.language} onNavigate={section => navigateManagement(section)}
+          onSectionIntent={section => { void preloadManagementSection(section); }}>
+          <ManagementContentPlaceholder />
+        </ManagementShell> : null}>
         {currentTab === 'desktop' && (
           <div className="flex-1 min-h-0 flex flex-col justify-start">
             {/* Central Spotlight Search Bar */}
@@ -793,7 +783,8 @@ export default function PrototypeApp() {
 
         {currentTab === 'account' && <ManagementShell section={accountInitialTab}
           showDock={settings.showDock !== false} dockIconSize={settings.dockIconSize}
-          language={settings.language} onNavigate={section => navigateManagement(section)}>
+          language={settings.language} onNavigate={section => navigateManagement(section)}
+          onSectionIntent={section => { void preloadManagementSection(section); }}>
         {accountInitialTab === 'trash' && <BookmarkTrashView entries={bookmarkTrash} folderEntries={folderTrash} folders={folders} language={settings.language}
           onRestoreFolder={async id => { await mutateLibrary(() => storage.restoreTrashedFolder(id)); }}
           onPurgeFolder={async id => { await mutateLibrary(() => storage.purgeTrashedFolder(id)); }}
@@ -821,6 +812,7 @@ export default function PrototypeApp() {
           />
         )}
         </ManagementShell>}
+        </React.Suspense>
       </main>
       {activeDesktopFolder && desktopLayout && <DesktopFolderModal
         revealBookmarkId={revealDesktopBookmarkId}
@@ -969,9 +961,11 @@ export default function PrototypeApp() {
       />}
 
       {/* Built-in Floating Tools */}
-      <CalculatorTool isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
-      <JsonFormatterTool isOpen={isJsonFormatterOpen} onClose={() => setIsJsonFormatterOpen(false)} />
-      <WordCounterTool isOpen={isWordCounterOpen} onClose={() => setIsWordCounterOpen(false)} />
+      {(toolsMounted || toolsOpen) && <React.Suspense fallback={null}><BuiltinTools
+        calculatorOpen={isCalculatorOpen} jsonOpen={isJsonFormatterOpen} wordCounterOpen={isWordCounterOpen}
+        onCloseCalculator={() => setIsCalculatorOpen(false)} onCloseJson={() => setIsJsonFormatterOpen(false)}
+        onCloseWordCounter={() => setIsWordCounterOpen(false)}
+      /></React.Suspense>}
 
       {/* Toast Notification with Undo */}
       <Toast toast={toast} onClose={() => setToast(null)} />
@@ -1060,8 +1054,7 @@ export default function PrototypeApp() {
       )}
 
       {/* macOS Launchpad (应用抽屉 / 启动台) */}
-      {isLaunchpadOpen && <React.Suspense fallback={<div role="status" className="fixed inset-0 z-[1200] flex items-center justify-center bg-[var(--desktop-launchpad)] text-sm text-[var(--desktop-text)]">{t('launchpadLoading')}</div>}>
-      <Launchpad
+      {isLaunchpadOpen && <Launchpad
         onboarding={taskContext?.task === 'pin' ? taskContext : undefined}
         onRevealDesktop={revealPinnedBookmark}
         isOpen={isLaunchpadOpen}
@@ -1097,8 +1090,7 @@ export default function PrototypeApp() {
         }}
         desktopBookmarkIds={desktopBookmarkIds}
         onToggleDockBookmark={handleToggleDockBookmark}
-      />
-      </React.Suspense>}
+      />}
       <OnboardingPanel controller={onboarding} language={settings.language} hasBookmarks={bookmarks.length > 0}
         hideResult={!!activeDesktopFolder}
         onStart={startOnboarding} onBackup={() => {

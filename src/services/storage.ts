@@ -57,6 +57,12 @@ const STORAGE_KEYS = {
   RECENT_USED: 'jipage_recent_used_v1',
 };
 
+interface ReadCache {
+  source?: { raw: string; values: Record<string, string | null> };
+  envelope?: { raw: string; data: Record<string, unknown> };
+  library?: { source: string; data: DesktopLibrary };
+}
+
 // URL normalizer for duplicate checking
 export function normalizeUrl(url: string): string {
   try {
@@ -142,14 +148,51 @@ export class StorageManager {
     source: string; candidate: string; records: RestoreRecord[];
   }>();
   private readonly librarySnapshots = new WeakMap<DesktopLibrary, string>();
+  private readCache: ReadCache | undefined;
+
+  private withReadCache<T>(read: () => T): T {
+    if (this.readCache) return read();
+    // Share parsed objects only within one synchronous read. Callers may freely
+    // edit their returned snapshot without changing a subsequent storage read.
+    this.readCache = {};
+    try { return read(); }
+    finally { this.readCache = undefined; }
+  }
 
   private sourceRaw(): string {
-    return JSON.stringify({
+    const values = {
       [STORAGE_KEYS.LIBRARY]: applicationStorage().getItem(STORAGE_KEYS.LIBRARY),
       [STORAGE_KEYS.BOOKMARKS]: applicationStorage().getItem(STORAGE_KEYS.BOOKMARKS),
       [STORAGE_KEYS.FOLDERS]: applicationStorage().getItem(STORAGE_KEYS.FOLDERS),
       [STORAGE_KEYS.COLLECTIONS]: applicationStorage().getItem(STORAGE_KEYS.COLLECTIONS),
-    });
+    };
+    const cached = this.readCache?.source;
+    if (cached && Object.entries(values).every(([key, value]) => cached.values[key] === value)) return cached.raw;
+    const raw = JSON.stringify(values);
+    if (this.readCache) this.readCache.source = { raw, values };
+    return raw;
+  }
+
+  private sourceValues(source: string): Record<string, string | null> {
+    return this.readCache?.source?.raw === source
+      ? this.readCache.source.values : JSON.parse(source);
+  }
+
+  private readViewSnapshot() {
+    return {
+      bookmarks: this.getBookmarks(), folders: this.getFolders(), collections: this.getCollections(),
+      bookmarkTrash: this.getBookmarkTrash(), folderTrash: this.getFolderTrash(),
+      settings: structuredClone(this.getUserSettings()), desktopLayout: this.getDesktopLayout(),
+      searchEngines: this.getSearchEngines(),
+    };
+  }
+
+  /** A single independent snapshot for initial rendering and local refreshes. */
+  readWorkbenchSnapshot() {
+    return this.withReadCache(() => ({
+      ...this.readViewSnapshot(),
+      categories: structuredClone(this.getCategories()), tags: structuredClone(this.getTags()), submissions: this.getSubmissions(),
+    }));
   }
 
   hasLibraryChanges(): boolean {
@@ -161,12 +204,7 @@ export class StorageManager {
     if (this.pendingMutations) throw new Error('CONFLICT');
     const source = this.sourceRaw();
     const reader = new StorageManager();
-    const snapshot = {
-      bookmarks: reader.getBookmarks(), folders: reader.getFolders(), collections: reader.getCollections(),
-      bookmarkTrash: reader.getBookmarkTrash(), folderTrash: reader.getFolderTrash(),
-      settings: reader.getUserSettings(), desktopLayout: reader.getDesktopLayout(),
-      searchEngines: reader.getSearchEngines(),
-    };
+    const snapshot = reader.withReadCache(() => reader.readViewSnapshot());
     if (this.sourceRaw() !== source) throw new Error('CONFLICT');
     this.pageBase = reader.pageBase;
     this.bookmarkBase = reader.bookmarkBase;
@@ -181,6 +219,7 @@ export class StorageManager {
 
   private envelope(raw: string | null): Record<string, unknown> | null {
     if (raw === null) return null;
+    if (this.readCache?.envelope?.raw === raw) return this.readCache.envelope.data;
     try {
       const data = JSON.parse(raw);
       if (!data || data.version !== 1 || !Array.isArray(data.bookmarks) || !Array.isArray(data.folders)) {
@@ -190,6 +229,7 @@ export class StorageManager {
       readFolderTrash(data.folderTrash);
       if (data.dockBookmarkIds !== undefined && (!Array.isArray(data.dockBookmarkIds)
         || data.dockBookmarkIds.some((id: unknown) => typeof id !== 'string'))) throw new Error('CORRUPT_DATA');
+      if (this.readCache) this.readCache.envelope = { raw, data };
       return data;
     } catch {
       throw new Error('CORRUPT_DATA');
@@ -199,7 +239,7 @@ export class StorageManager {
   getDesktopLayout(): Layout {
     const library = this.readLibrary();
     const source = this.librarySnapshots.get(library)!;
-    const data = this.envelope(JSON.parse(source)[STORAGE_KEYS.LIBRARY]);
+    const data = this.envelope(this.sourceValues(source)[STORAGE_KEYS.LIBRARY]);
     this.desktopBase ??= source;
     return data && Object.hasOwn(data, 'desktopLayout')
       ? validateDesktopLayout(library, data.desktopLayout) : validateDesktopLayout(library, emptyDesktopLayout());
@@ -281,7 +321,8 @@ export class StorageManager {
   }
   readLibrary(): { bookmarks: Bookmark[]; folders: Folder[] } {
     const source = this.sourceRaw();
-    const values = JSON.parse(source) as Record<string, string | null>;
+    if (this.readCache?.library?.source === source) return this.readCache.library.data;
+    const values = this.sourceValues(source);
     const data = this.envelope(values[STORAGE_KEYS.LIBRARY]);
     let result: DesktopLibrary;
     try {
@@ -299,6 +340,7 @@ export class StorageManager {
     }
     this.librarySnapshots.set(result, source);
     this.pageBase ??= source;
+    if (this.readCache) this.readCache.library = { source, data: result };
     return result;
   }
 

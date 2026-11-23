@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import type { Bookmark, Folder } from '../../src/types';
 import { buildLaunchpadIndex, searchLaunchpad } from '../../src/components/desktop/launchpad-index';
+import { buildBookmarkSearchIndex } from '../../src/services/bookmark-search';
 
 function bookmark(id: string, title: string, extra: Partial<Bookmark> = {}): Bookmark {
   return {
@@ -17,6 +18,57 @@ function folder(id: string, name: string, parentId?: string): Folder {
   };
 }
 const ids = (entries: ReturnType<typeof buildLaunchpadIndex>) => entries.map(entry => entry.bookmark.id);
+
+test('first Launchpad open reuses pinyin fields already indexed by desktop search', () => {
+  const bookmarks = [bookmark('shared-index', '共享中文索引', { folderId: 'shared-folder' })];
+  const folders = [folder('shared-folder', '工作资料')];
+  buildBookmarkSearchIndex(bookmarks, () => '工作资料');
+  const normalize = mock.method(String.prototype, 'normalize');
+  try {
+    const index = buildLaunchpadIndex(bookmarks, folders);
+    assert.equal(normalize.mock.callCount(), 0, 'Launchpad does not repeat desktop search indexing');
+    assert.equal(searchLaunchpad(index, 'gxzwsy gzzl').length, 1);
+  } finally { normalize.mock.restore(); }
+});
+
+test('reopening uses an unchanged sorted snapshot without re-reading bookmark URLs', () => {
+  let reads = 0;
+  const item = bookmark('cached', '中文工具');
+  const url = item.url;
+  Object.defineProperty(item, 'url', { get() { reads++; return url; } });
+  const bookmarks = [item];
+  const folders: Folder[] = [];
+  const first = buildLaunchpadIndex(bookmarks, folders);
+  reads = 0;
+  const reopened = buildLaunchpadIndex(bookmarks, folders);
+  assert.ok(reads <= 1, 'Only the snapshot comparison reads the URL; validation and indexing are reused');
+  assert.deepEqual(reopened, first);
+  assert.notEqual(reopened, first);
+  assert.notEqual(reopened[0], first[0]);
+});
+
+test('cached launchpad snapshots detect edits, path changes and replaced objects', () => {
+  const item = bookmark('cache-edits', '中文工具', { folderId: 'cache-folder' });
+  const bookmarks = [item];
+  const folders = [folder('cache-folder', '工作')];
+  const first = buildLaunchpadIndex(bookmarks, folders);
+  first[0].path = 'corrupted';
+  first[0].searchFields.push('corrupted');
+  const reopened = buildLaunchpadIndex(bookmarks, folders);
+  assert.equal(reopened[0].path, '工作');
+  assert.equal(searchLaunchpad(reopened, 'corrupted').length, 0);
+  item.title = '生活';
+  folders[0].name = '资料';
+  const edited = buildLaunchpadIndex(bookmarks, folders);
+  assert.equal(edited[0].sortKey, 'shenghuo');
+  assert.equal(edited[0].path, '资料');
+  assert.equal(searchLaunchpad(edited, 'sh zl').length, 1);
+  const replacement = { ...item, icon: 'updated-icon' };
+  bookmarks[0] = replacement;
+  assert.equal(buildLaunchpadIndex(bookmarks, folders)[0].bookmark, replacement);
+  replacement.url = 'javascript:alert(1)';
+  assert.equal(buildLaunchpadIndex(bookmarks, folders).length, 0);
+});
 
 test('flattens all valid HTTP(S) bookmarks regardless of archive or desktop pin and emits no folder items', () => {
   const bookmarks = [

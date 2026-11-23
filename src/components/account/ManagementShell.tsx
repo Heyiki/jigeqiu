@@ -18,8 +18,9 @@ const groups = [
   ] },
 ] as const;
 
-export function ManagementShell({ section, onNavigate, language, children, showDock, dockIconSize }: {
+export function ManagementShell({ section, onNavigate, onSectionIntent, language, children, showDock, dockIconSize }: {
   section: ManagementSection; onNavigate: (section: ManagementSection) => void;
+  onSectionIntent?: (section: ManagementSection) => void;
   language?: string; children: React.ReactNode;
   showDock?: boolean; dockIconSize?: number;
 }) {
@@ -47,6 +48,8 @@ export function ManagementShell({ section, onNavigate, language, children, showD
           <h2 className="mb-2 px-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">{t(group.label)}</h2>
           <div className="space-y-1">{group.items.map(item => <button key={item.id} type="button"
             aria-current={section === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}
+            onPointerEnter={() => onSectionIntent?.(item.id)} onFocus={() => onSectionIntent?.(item.id)}
+            onTouchStart={() => onSectionIntent?.(item.id)}
             className={`flex min-h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-sky-500 ${section === item.id ? 'bg-sky-500/15 font-semibold text-sky-800 dark:text-sky-200' : 'text-slate-700 hover:bg-black/5 dark:text-slate-300 dark:hover:bg-white/5'}`}>
             <item.icon size={15} className="shrink-0" /><span>{t(item.label)}</span>
           </button>)}</div>
@@ -56,5 +59,21 @@ export function ManagementShell({ section, onNavigate, language, children, showD
     </div>
     </div>
     <BackToTop language={language} showDock={showDock} dockIconSize={dockIconSize} />
+  </div>;
+}
+
+/** A quiet content placeholder; real navigation and titles remain available. */
+export function ManagementContentPlaceholder() {
+  return <div aria-busy="true" className="min-h-80 space-y-5 motion-safe:animate-pulse">
+    <div aria-hidden="true" className="flex items-center justify-between gap-4">
+      <div className="h-9 w-64 max-w-[65%] rounded-lg bg-slate-200/70 dark:bg-white/10" />
+      <div className="h-9 w-24 rounded-lg bg-slate-200/70 dark:bg-white/10" />
+    </div>
+    <div aria-hidden="true" className="overflow-hidden rounded-xl border border-slate-200/70 dark:border-white/10">
+      {[0, 1, 2, 3, 4].map(row => <div key={row} className="flex h-16 items-center gap-4 border-b border-slate-200/50 px-4 last:border-0 dark:border-white/5">
+        <div className="h-8 w-8 shrink-0 rounded-lg bg-slate-200/70 dark:bg-white/10" />
+        <div className="h-3 w-2/5 rounded bg-slate-200/70 dark:bg-white/10" />
+      </div>)}
+    </div>
   </div>;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { hashForRoute, parseHashRoute, routeTitle, type AppRoute } from '../services/hash-route';
 
 export function useHashRoute(language?: string) {
@@ -13,7 +13,9 @@ export function useHashRoute(language?: string) {
       if (window.location.hash !== hash) {
         window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${hash}`);
       }
-      setRoute(previous => hashForRoute(previous) === hash ? previous : next);
+      const update = () => setRoute(previous => hashForRoute(previous) === hash ? previous : next);
+      if (next.page === 'management') startTransition(update);
+      else update();
     }
     sync();
     window.addEventListener('hashchange', sync);
@@ -33,7 +35,9 @@ export function useHashRoute(language?: string) {
       const state = next.page === 'launchpad' ? { launchpadSource: hashForRoute(parseHashRoute(window.location.hash)) } : null;
       window.history.pushState(state, '', `${window.location.pathname}${window.location.search}${hash}`);
     }
-    setRoute(previous => hashForRoute(previous) === hash ? previous : next);
+    const update = () => setRoute(previous => hashForRoute(previous) === hash ? previous : next);
+    if (next.page === 'management') startTransition(update);
+    else update();
   }
 
   function closeLaunchpad() {

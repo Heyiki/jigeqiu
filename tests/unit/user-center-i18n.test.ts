@@ -27,10 +27,21 @@ const engine = {
 function harness(language: string | undefined, initialTab: 'bookmarks' | 'engines' | 'appearance' | 'import-export') {
   const path = new URL('../../src/components/account/UserCenterView.tsx', import.meta.url);
   const require = createRequire(path);
+  const transferPage = require('./AssetTransferPage').AssetTransferPage;
+  const wallpaperSettings = require('../common/WallpaperSettings').WallpaperSettings;
+  const loadTransfer = () => Promise.resolve({ default: transferPage });
+  const loadWallpaperSettings = () => Promise.resolve({ default: wallpaperSettings });
   const state: unknown[] = [];
   let cursor = 0;
   const hooks = {
     ...React,
+    // This synchronous locale harness exercises real, already loaded features.
+    // Delayed imports and route transitions are covered by management-loading.mjs.
+    lazy(loader: typeof loadTransfer) {
+      if (loader === loadTransfer) return transferPage;
+      if (loader === loadWallpaperSettings) return wallpaperSettings;
+      return React.lazy(loader);
+    },
     useState(initial: unknown) {
       const index = cursor++;
       if (!(index in state)) state[index] = typeof initial === 'function' ? (initial as () => unknown)() : initial;
@@ -63,6 +74,7 @@ function harness(language: string | undefined, initialTab: 'bookmarks' | 'engine
     saveManualBookmark: () => bookmark,
   };
   const moduleMocks: Record<string, unknown> = {
+    './management-loading': { loadTransfer, loadWallpaperSettings },
     '../common/FaviconImage': { FaviconImage: () => null },
     '../common/BookmarkDialog': { BookmarkDialog: () => null },
     '../common/FolderTreeSelect': { FolderTreeSelect: ({ label }: { label: string }) => React.createElement('label', null, label) },

@@ -42,6 +42,16 @@ async function launch(directory) {
 }
 try {
   context = await launch(extension);
+  await context.addInitScript(() => {
+    globalThis.startupLoadingMessages = [];
+    new MutationObserver(() => {
+      for (const status of document.querySelectorAll('[role="status"]')) {
+        if (/正在(?:读取本地数据|打开工作台|打开启动台)|Opening (?:the workbench|Launchpad)|Reading local data/i.test(status.textContent)) {
+          globalThis.startupLoadingMessages.push(status.textContent);
+        }
+      }
+    }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
   const page = await context.newPage();
   const errors = [];
   const cspErrors = [];
@@ -295,6 +305,13 @@ try {
   );
   const second = await context.newPage();
   await second.goto('chrome://newtab/');
+  await second.getByTestId('desktop-viewport').waitFor();
+  await second.locator('[data-onboarding="launchpad"]').click();
+  await second.locator('[data-panel="launchpad"]').waitFor();
+  assert.deepEqual(await second.evaluate(() => globalThis.startupLoadingMessages), [],
+    'A new tab and its first Launchpad open render without loading messages');
+  await second.keyboard.press('Escape');
+  await second.locator('[data-panel="launchpad"]').waitFor({ state: 'hidden' });
   await second.getByRole('banner').waitFor();
   await second.evaluate(() => { globalThis.location.hash = '/library'; globalThis.syncMarker = 'still mounted'; });
   assert.equal(
