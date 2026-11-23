@@ -14,11 +14,11 @@ const privacySectionsZh = [
   },
   {
     title: '浏览器权限与新标签页',
-    text: '扩展将新标签页替换为记个球工作台，申请 storage 权限以保存本地数据，contextMenus 权限以提供“收藏到记个球”右键菜单，activeTab 权限仅在你点击菜单或使用扩展快捷键时读取当前网页的网址和标题。待收藏内容临时保存在 chrome.storage.session 中，关闭收藏弹窗或结束浏览器会话后清除；确认表单才写入收藏库。不接管浏览器原生收藏快捷键或收藏星标，不申请 favicon、浏览器原生书签、浏览历史、tabs 或默认的所有网站访问权限，不注入其他网站页面。清单保留 HTTPS 站点可选权限声明，但当前不主动申请，也不提供授权按钮；已有站点权限可在浏览器扩展管理中撤销。这里的“知晓并继续”仅是应用内告知确认，不会授予网站访问权限。',
+    text: '扩展将新标签页替换为记个球工作台，申请 storage 权限以保存本地数据，contextMenus 权限以提供“收藏到记个球”右键菜单，activeTab 权限仅在你点击菜单或使用扩展快捷键时读取当前网页的网址和标题。待收藏内容临时保存在 chrome.storage.session 中，关闭收藏弹窗或结束浏览器会话后清除；确认表单才写入收藏库。不接管浏览器原生收藏快捷键或收藏星标，不申请 favicon、浏览器原生书签、浏览历史、tabs 或默认的所有网站访问权限，不注入其他网站页面。清单声明 HTTP/HTTPS 可选站点权限。仅在你主动使用链接健康检查时，先说明扫描范围和权限用途，再由你点击一次性授权所有 HTTP/HTTPS 网站访问权限。该权限覆盖全部网站，新增站点无需重复授权；链接检查仅请求所选范围的收藏网址，拒绝授权不开始扫描。扫描结果仅在当前页面内存中保留，刷新或关闭后清空。授权也可能用于已有 HTTPS 图标发现及标题补全功能，已有站点权限可在浏览器扩展管理中撤销。这里的“知晓并继续”仅是应用内告知确认，不会授予网站访问权限。',
   },
   {
     title: '自动网站图标',
-    text: '未授权站点不进行图标或网页元数据的 fetch 读取，仅尝试普通图片展示或文字回退，图片仍可能联网。授权后可能读取该站点的 favicon、常见图标文件、首页 HTML 及声明的 manifest、图标或 Logo。其他域名的资源仍需各自授权才可 fetch，不会自动申请；fetch 不跟随重定向。目标网站可能收到 IP、请求地址及浏览器信息。不使用第三方图标聚合服务。',
+    text: '未授权站点不进行图标或网页元数据的 fetch 读取，仅尝试普通图片展示或文字回退，图片仍可能联网。授权后可能读取该站点的 favicon、常见图标文件、首页 HTML 及声明的 manifest、图标或 Logo。仅在目标域名已被单站或全部网站授权覆盖时才可 fetch，不会自动申请权限；fetch 不跟随重定向。目标网站可能收到 IP、请求地址及浏览器信息。不使用第三方图标聚合服务。',
   },
   {
     title: '手动图片与其他远程资源',
@@ -38,7 +38,7 @@ const privacySectionsZh = [
   },
   {
     title: '保留期限与安全',
-    text: '本地数据一般保留到你主动删除、清除扩展数据或卸载扩展。图标缓存可能按容量和过期策略被替换。移入回收站的数据仍保留在本地，直至彻底删除；你另行导出的文件不随卸载自动删除。数据依赖浏览器和操作系统的本地隔离保护，扩展没有为本地收藏、壁纸或导出文件额外提供应用级加密。请保护设备与浏览器账户，不要保存密码、访问令牌等秘密。已有权限允许的 fetch 使用 HTTPS，不携带凭据和来源页面地址；普通图片、外部搜索及网页访问仍遵循浏览器与目标站点的规则。',
+    text: '本地数据一般保留到你主动删除、清除扩展数据或卸载扩展。图标缓存可能按容量和过期策略被替换。移入回收站的数据仍保留在本地，直至彻底删除；你另行导出的文件不随卸载自动删除。数据依赖浏览器和操作系统的本地隔离保护，扩展没有为本地收藏、壁纸或导出文件额外提供应用级加密。请保护设备与浏览器账户，不要保存密码、访问令牌等秘密。图标及标题读取使用 HTTPS；链接检查按收藏网址使用 HTTP 或 HTTPS，HTTP 未加密。上述 fetch 均不携带凭据和来源页面地址；普通图片、外部搜索及网页访问仍遵循浏览器与目标站点的规则。',
   },
   {
     title: '导入、导出与删除',
@@ -65,11 +65,11 @@ const privacySectionsEn = [
   },
   {
     title: 'Browser permissions and new tabs',
-    text: 'The extension replaces new tabs with the JIGEQIU workbench. It requests storage for local data, contextMenus for "Save to JIGEQIU", and activeTab to read the current page URL and title only when you invoke the menu or extension shortcut. Pending captures stay temporarily in chrome.storage.session and are cleared when the capture window closes or the browser session ends. Only confirming the form writes a bookmark. The extension does not override native bookmarking shortcuts or the bookmark star, request favicon, native bookmarks, browsing history, tabs or default access to all sites, or inject content into other websites. The manifest declares optional HTTPS site permissions, but the extension currently neither requests them nor provides an authorization button. Existing site permissions can be revoked in browser extension settings. "Acknowledge and continue" only acknowledges this in-app notice; it does not grant website access.',
+    text: 'The extension replaces new tabs with the JIGEQIU workbench. It requests storage for local data, contextMenus for "Save to JIGEQIU", and activeTab to read the current page URL and title only when you invoke the menu or extension shortcut. Pending captures stay temporarily in chrome.storage.session and are cleared when the capture window closes or the browser session ends. Only confirming the form writes a bookmark. The extension does not override native bookmarking shortcuts or the bookmark star, request favicon, native bookmarks, browsing history, tabs or default access to all sites, or inject content into other websites. The manifest declares optional HTTP/HTTPS site permissions. Only when you start a link health check, its scope and purpose are explained before you click to grant access to all HTTP/HTTPS websites once. This permission covers all websites, including newly added sites. Link checks request only bookmarks in the selected scope; denying access does not start a scan. Scan results stay in page memory and are cleared on reload or close. Grants may also enable existing HTTPS icon discovery and title completion, and can be revoked in browser extension settings. "Acknowledge and continue" only acknowledges this in-app notice; it does not grant website access.',
   },
   {
     title: 'Automatic site icons',
-    text: 'Without site permission, icons and page metadata are not read using fetch; ordinary images or text fallbacks are used instead. Images may still connect to the network. With permission, the site\'s favicon, common icon files, homepage HTML and declared manifest, icons or logo may be read. Resources on other domains require their own permissions for fetch; these permissions are not requested automatically. Fetch does not follow redirects. Sites may receive your IP address, request URL and browser information. No third-party favicon aggregation service is used.',
+    text: 'Without site permission, icons and page metadata are not read using fetch; ordinary images or text fallbacks are used instead. Images may still connect to the network. With permission, the site\'s favicon, common icon files, homepage HTML and declared manifest, icons or logo may be read. Fetch requires the destination to be covered by an individual-site or all-sites grant; permissions are not requested automatically. Fetch does not follow redirects. Sites may receive your IP address, request URL and browser information. No third-party favicon aggregation service is used.',
   },
   {
     title: 'Manual images and other remote resources',
@@ -89,7 +89,7 @@ const privacySectionsEn = [
   },
   {
     title: 'Retention and security',
-    text: 'Local data generally remains until you delete it, clear extension data or uninstall the extension. Icon caches may be replaced according to capacity and expiration policies. Recycle bin items remain local until permanently deleted. Exported files are not automatically deleted on uninstall. Data relies on browser and operating system isolation; the extension adds no application-level encryption for bookmarks, wallpapers or exports. Protect your device and browser account, and do not store passwords, access tokens or other secrets. Permitted fetch requests use HTTPS and omit credentials and the referring page URL. Ordinary images, external searches and page visits still follow browser and destination rules.',
+    text: 'Local data generally remains until you delete it, clear extension data or uninstall the extension. Icon caches may be replaced according to capacity and expiration policies. Recycle bin items remain local until permanently deleted. Exported files are not automatically deleted on uninstall. Data relies on browser and operating system isolation; the extension adds no application-level encryption for bookmarks, wallpapers or exports. Protect your device and browser account, and do not store passwords, access tokens or other secrets. Icon and title fetches use HTTPS; link checks use HTTP or HTTPS as bookmarked, and HTTP is unencrypted. These fetches omit credentials and the referring page URL. Ordinary images, external searches and page visits still follow browser and destination rules.',
   },
   {
     title: 'Import, export and deletion',

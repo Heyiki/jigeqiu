@@ -50,10 +50,12 @@ try {
   assert.equal(await trash.getByRole('combobox').count(), 0);
   await search.fill('');
   await next();
-  await trash.getByRole('combobox').selectOption('30');
+  await trash.getByRole('combobox').click();
+  await page.getByRole('option', { name: '30 条', exact: true }).click();
   assert.equal(await trash.getByRole('listitem').count(), 18);
   assert.equal(await trash.locator('[aria-current="page"]').textContent(), '1');
-  await trash.getByRole('combobox').selectOption('15');
+  await trash.getByRole('combobox').click();
+  await page.getByRole('option', { name: '15 条', exact: true }).click();
   await next();
   await trash.getByRole('button', { name: '恢复收藏', exact: true }).click();
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('jipage_library_v2')).bookmarkTrash.length === 15);

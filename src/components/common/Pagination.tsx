@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { createTranslator } from '../../i18n';
+import { PageSizeSelect } from './PageSizeSelect';
 
 interface PaginationProps {
   total: number;
@@ -27,13 +28,7 @@ export function Pagination({
     <div className="flex flex-wrap items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
       <span>{summary ?? <>{t('managerFilteredCountLead')}<strong className="text-slate-800 dark:text-slate-200">{total}</strong>{t('managerFilteredCountTail')}</>}</span>
       <span aria-hidden="true" className="text-slate-300 dark:text-white/10">|</span>
-      <label className="flex items-center gap-1.5">
-        <span>{t('managerPageSize')}</span>
-        <select value={pageSize} disabled={disabled} onChange={event => onPageSizeChange(Number(event.target.value))}
-          className="px-2 py-1 rounded-lg bg-black/5 dark:bg-white/10 border border-slate-200/60 dark:border-white/10 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-sky-500 cursor-pointer">
-          {[15, 30, 50, 100].map(size => <option key={size} value={size}>{t('managerPageSizeOption', { count: size })}</option>)}
-        </select>
-      </label>
+      <PageSizeSelect value={pageSize} disabled={disabled} language={language} onChange={onPageSizeChange} />
     </div>
     <div role="group" className="flex max-w-full flex-wrap items-center justify-center gap-1">
       <button type="button" disabled={disabled || current === 1} onClick={() => onPageChange(1)}

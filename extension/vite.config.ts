@@ -13,6 +13,7 @@ function extensionAdapters(): Plugin {
       ['services/site-icons.ts', 'permissions/site-icons.ts'],
       ['services/site-icon-discovery.ts', 'permissions/site-icon-discovery.ts'],
       ['services/bookmark-title.ts', 'permissions/bookmark-title.ts'],
+      ['services/link-health-platform.ts', 'permissions/link-health-platform.ts'],
     ].map(([source, target]) => [
       normalizePath(
         fileURLToPath(new URL(`../src/${source}`, import.meta.url)),
@@ -28,7 +29,7 @@ function extensionAdapters(): Plugin {
       if (!importer || normalizePath(importer).startsWith(extensionRoot))
         return;
       if (
-        !/\/(?:SiteIconPicker|site-icons|site-icon-discovery|bookmark-title)(?:\.[jt]sx?)?$/.test(
+        !/\/(?:SiteIconPicker|site-icons|site-icon-discovery|bookmark-title|link-health-platform)(?:\.[jt]sx?)?$/.test(
           source,
         )
       )

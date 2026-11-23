@@ -27,7 +27,7 @@ export default [
     },
   },
   {
-    files: ['tests/browser/**/*.mjs', 'extension/tests/browser.mjs'],
+    files: ['tests/browser/**/*.mjs', 'extension/tests/*browser*.mjs'],
     languageOptions: {
       globals: globals.browser,
     },

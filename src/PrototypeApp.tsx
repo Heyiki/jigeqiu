@@ -27,7 +27,11 @@ import { FolderModal } from './components/desktop/FolderModal';
 import { QuickAddModal } from './components/desktop/QuickAddModal';
 import { BookmarkDialog } from './components/common/BookmarkDialog';
 import { ManagementShell, ManagementContentPlaceholder, type ManagementSection } from './components/account/ManagementShell';
-import { loadManagement, loadTrash, preloadManagementSection } from './components/account/management-loading';
+import { loadManagement, loadTrash, loadLinkHealth, preloadManagementSection } from './components/account/management-loading';
+import { LinkHealthController } from './services/link-health/controller';
+import { probeLink } from './services/link-health/probe';
+import { getLinkHealthPlatform } from './services/link-health-platform';
+import { withCollectionMutation } from './services/collection-mutation';
 import { TopNavigation } from './components/common/TopNavigation';
 import { DesktopAttribution } from './components/common/DesktopAttribution';
 import { DesktopFolderModal } from './components/desktop/DesktopFolderModal';
@@ -46,6 +50,7 @@ import type { OnboardingEntry, OnboardingTaskContext } from './components/onboar
 const loadTools = () => import('./components/plugins/BuiltinTools');
 const UserCenterView = React.lazy(loadManagement);
 const BookmarkTrashView = React.lazy(loadTrash);
+const LinkHealthView = React.lazy(loadLinkHealth);
 const BuiltinTools = React.lazy(loadTools);
 
 export default function PrototypeApp() {
@@ -65,6 +70,19 @@ export default function PrototypeApp() {
     return Object.is(nextSettings, current.settings) ? current : { ...current, settings: nextSettings };
   });
   const t = createTranslator(settings.language);
+  const [healthPlatform] = useState(getLinkHealthPlatform);
+  const [healthController] = useState(() => new LinkHealthController((url, signal) => healthPlatform
+    ? probeLink(url, { ...healthPlatform, signal }) : Promise.resolve({ category: 'unchecked', reason: 'unsupported' })));
+  useEffect(() => {
+    const offline = () => healthController.setOffline(!navigator.onLine);
+    window.addEventListener('offline', offline);
+    window.addEventListener('online', offline);
+    return () => {
+      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', offline);
+      healthController.stop();
+    };
+  }, [healthController]);
   useEffect(() => {
     document.documentElement.lang = resolveLocale(settings.language) === 'en' ? 'en' : 'zh-CN';
   }, [settings.language]);
@@ -790,7 +808,14 @@ export default function PrototypeApp() {
           onPurgeFolder={async id => { await mutateLibrary(() => storage.purgeTrashedFolder(id)); }}
           onRestore={async id => { await mutateLibrary(() => storage.restoreTrashedBookmark(id)); }}
           onPurge={async id => { await mutateLibrary(() => storage.purgeTrashedBookmark(id)); }} />}
-        {accountInitialTab !== 'trash' && (
+        {accountInitialTab === 'link-health' && <LinkHealthView controller={healthController} platform={healthPlatform}
+          bookmarks={bookmarks} folders={folders} language={settings.language}
+          onTrash={async ids => await withCollectionMutation(() => mutateLibrary(() => {
+            const candidates = healthController.trashCandidates(ids, storage.getBookmarks());
+            if (candidates.length) storage.deleteBookmarks(candidates.map(bookmark => bookmark.id));
+            return candidates.length;
+          }), () => true)} />}
+        {accountInitialTab !== 'trash' && accountInitialTab !== 'link-health' && (
           <UserCenterView
             onboarding={taskContext?.task === 'import' ? taskContext : undefined}
             onLibraryChanged={refreshLibrary}

@@ -25,8 +25,10 @@ import { searchPresetMessages } from './search-presets';
 import { tipMessages } from './tips';
 import { onboardingMessages } from './onboarding';
 import { extensionMessages } from './extension';
+import { linkHealthMessages } from './link-health';
 
 const catalog = {
+  ...linkHealthMessages,
   ...bookmarkMessages,
   ...dataTransferMessages,
   ...guideMessages,

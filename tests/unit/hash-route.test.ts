@@ -3,7 +3,7 @@ import test from 'node:test';
 import { hashForRoute, parseHashRoute, routeTitle } from '../../src/services/hash-route';
 
 test('every current destination round-trips without introducing removed features', () => {
-  for (const section of ['bookmarks', 'engines', 'appearance', 'import-export', 'trash'] as const) {
+  for (const section of ['bookmarks', 'engines', 'appearance', 'import-export', 'link-health', 'trash'] as const) {
     const route = { page: 'management', section } as const;
     assert.deepEqual(parseHashRoute(hashForRoute(route)), route);
   }
