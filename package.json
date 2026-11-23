@@ -1,7 +1,7 @@
 {
   "name": "jigeqiu-web",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "JIGEQIU 记个球：开源书签管理与个人导航工作台。A self-hostable, local-first bookmark manager and personal start page with Chrome/Edge new tab extensions, nested folders, global search, and bookmark import/export. No account or backend required.",
   "keywords": [
     "jigeqiu",
