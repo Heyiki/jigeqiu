@@ -14,6 +14,7 @@ import { buildFolderTree, indexFolderPaths, visibleFolderRows } from '../common/
 import { BookmarkSourceSettings } from '../common/BookmarkSourceSettings';
 import { IconCacheSettings } from '../common/IconCacheSettings';
 import { LaunchpadSettings } from '../common/LaunchpadSettings';
+import { DockSizeSettings } from '../common/DockSizeSettings';
 import { storage } from '../../services/storage';
 import {
   BookmarkCheck,
@@ -1559,26 +1560,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
 
               {/* Dock Icon Size Slider (Visible if showDock !== false) */}
               {userSettings.showDock !== false && (
-                <div className="p-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                    <span>{t('managerTaskbarIconSize')}</span>
-                    <span className="font-mono text-sky-500">{userSettings.dockIconSize || 48}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="34"
-                    max="74"
-                    value={userSettings.dockIconSize || 48}
-                    aria-label={t('managerTaskbarIconSize')}
-                    onChange={e => onUpdateSettings({ dockIconSize: Number(e.target.value) })}
-                    className="w-full accent-sky-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-white/10 rounded-lg"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400">
-                    <span>{t('managerCompactSize')}</span>
-                    <span>{t('managerStandardSize')}</span>
-                    <span>{t('managerLargeSize')}</span>
-                  </div>
-                </div>
+                <DockSizeSettings settings={userSettings} onUpdate={onUpdateSettings} />
               )}
             </div>
           </div>

@@ -70,6 +70,7 @@
     "test:browser:launchpad-scroll-ownership": "node tests/browser/launchpad-scroll-ownership.mjs",
     "test:browser:launchpad-first-open": "npm run build && node tests/browser/launchpad-first-open.mjs",
     "test:browser:appearance": "node tests/browser/desktop-appearance.mjs",
+    "test:browser:taskbar-settings": "node tests/browser/taskbar-settings.mjs",
     "test:browser:automatic-appearance": "node tests/browser/automatic-appearance.mjs",
     "test:browser:gradient-background": "node tests/browser/gradient-background.mjs",
     "test:browser:wallpaper-cache": "node tests/browser/wallpaper-cache.mjs",

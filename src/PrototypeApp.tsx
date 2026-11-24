@@ -678,10 +678,10 @@ export default function PrototypeApp() {
         data-dock-interaction={dockInteraction}
         data-desktop-surface={currentTab === 'desktop' ? '' : undefined}
         onClick={handleDesktopBackgroundClick}
-        className={`flex-1 flex flex-col ${currentTab === 'desktop' ? 'touch-none' : settings.showDock !== false ? 'pb-16 sm:pb-24' : 'pb-4 sm:pb-6'} cursor-default`}
+        className={`flex-1 flex flex-col ${currentTab === 'desktop' ? 'touch-none' : 'pb-4 sm:pb-6'} cursor-default`}
       >
         <React.Suspense fallback={currentTab === 'account' ? <ManagementShell section={accountInitialTab}
-          showDock={settings.showDock !== false} dockIconSize={settings.dockIconSize}
+          showDock={false}
           language={settings.language} onNavigate={section => navigateManagement(section)}
           onSectionIntent={section => { void preloadManagementSection(section); }}>
           <ManagementContentPlaceholder />
@@ -802,7 +802,7 @@ export default function PrototypeApp() {
         )}
 
         {currentTab === 'account' && <ManagementShell section={accountInitialTab}
-          showDock={settings.showDock !== false} dockIconSize={settings.dockIconSize}
+          showDock={false}
           language={settings.language} onNavigate={section => navigateManagement(section)}
           onSectionIntent={section => { void preloadManagementSection(section); }}>
         {accountInitialTab === 'trash' && <BookmarkTrashView entries={bookmarkTrash} folderEntries={folderTrash} folders={folders} language={settings.language}
@@ -1031,7 +1031,7 @@ export default function PrototypeApp() {
       ))}
 
       {/* Zone 6: Bottom Center macOS Dock (Pinned Quick-Launch Bookmarks & Direct Popup Plugins) */}
-      {settings.showDock !== false && (
+      {currentTab === 'desktop' && settings.showDock !== false && (
         <BottomDock
           onInteractionChange={setDockInteraction}
           showTools={false}
