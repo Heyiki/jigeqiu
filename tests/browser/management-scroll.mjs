@@ -67,7 +67,8 @@ try {
       assert.equal(box.width, 40);
       assert.equal(box.height, 40);
       assert.ok(box.x >= 0 && box.x + box.width <= width);
-      assert.ok(box.y + box.height < 844 - 100, 'Clears the large Dock on mobile and desktop');
+      assert.equal(await button.evaluate(el => getComputedStyle(el.parentElement).bottom), '24px', 'Management has no Taskbar clearance');
+      assert.equal(await page.locator('[data-testid="bottom-dock"]').count(), 0);
       await button.hover();
       await page.getByRole('tooltip', { name: '返回顶部', exact: true }).waitFor();
       await page.screenshot({ path: `/tmp/jigeqiu-management-scroll/${width}-${dark ? 'dark' : 'light'}.png` });
@@ -103,7 +104,7 @@ try {
   assert.equal(await english.evaluate(el => getComputedStyle(el.parentElement).bottom), '24px',
     'Without Dock the button returns to the lower corner');
   assert.deepEqual(errors, []);
-  console.log('PASS management scrollbar 9px only, threshold, tooltip, return/keyboard, reduced motion, day/night, Dock clearance and 320/390px');
+  console.log('PASS management scrollbar 9px only, threshold, tooltip, return/keyboard, reduced motion, day/night, hidden Taskbar and 320/390px');
 } finally {
   await browser?.close();
   await server.close();

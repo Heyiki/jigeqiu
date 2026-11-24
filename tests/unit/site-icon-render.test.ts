@@ -5,7 +5,17 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { FaviconImage } from '../../src/components/common/FaviconImage';
 
 const render = (title: string, size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'lg', url = 'https://example.com') =>
-  renderToStaticMarkup(React.createElement(FaviconImage, { title, size, url, iconBg: '#ff00ff' }));
+  renderToStaticMarkup(React.createElement(FaviconImage, { title, size, url, iconMode: 'text', iconBg: '#ff00ff' }));
+
+test('unresolved image icons reserve space without briefly showing a colored text icon', () => {
+  const markup = renderToStaticMarkup(React.createElement(FaviconImage, {
+    title: '中文', url: 'https://pending.example.com', size: 'lg',
+  }));
+  assert.match(markup, /data-icon-state="deferred"/);
+  assert.match(markup, /class="site-icon-placeholder"/);
+  assert.doesNotMatch(markup, /data-fallback-kind|<text/);
+  assert.match(markup, /aria-label="中文"/);
+});
 
 for (const size of ['xs', 'sm', 'md', 'lg', 'xl'] as const) {
   test(`Chinese fallback exposes more of the inner sides of both glyphs at ${size}`, () => {

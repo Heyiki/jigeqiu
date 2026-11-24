@@ -1,7 +1,7 @@
 {
   "name": "jigeqiu-web",
   "private": true,
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "JIGEQIU 记个球：开源书签管理与个人导航工作台。A self-hostable, local-first bookmark manager and personal start page with Chrome/Edge new tab extensions, nested folders, global search, and bookmark import/export. No account or backend required.",
   "keywords": [
     "jigeqiu",
@@ -40,6 +40,7 @@
     "test:browser:bookmark-source": "npm run build:extension && node extension/tests/bookmark-source-browser.mjs",
     "test:browser:link-health": "npm run build:extension && node extension/tests/link-health-browser.mjs",
     "test:browser:extension": "npm run build:extension && node extension/tests/browser.mjs && node extension/tests/browser-i18n.mjs && node extension/tests/browser-capture.mjs",
+    "test:browser:startup-assets": "npm run build:extension && node extension/tests/startup-assets.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "eslint . --max-warnings=0",
@@ -69,6 +70,7 @@
     "test:browser:launchpad-scroll-ownership": "node tests/browser/launchpad-scroll-ownership.mjs",
     "test:browser:launchpad-first-open": "npm run build && node tests/browser/launchpad-first-open.mjs",
     "test:browser:appearance": "node tests/browser/desktop-appearance.mjs",
+    "test:browser:taskbar-settings": "node tests/browser/taskbar-settings.mjs",
     "test:browser:automatic-appearance": "node tests/browser/automatic-appearance.mjs",
     "test:browser:gradient-background": "node tests/browser/gradient-background.mjs",
     "test:browser:wallpaper-cache": "node tests/browser/wallpaper-cache.mjs",

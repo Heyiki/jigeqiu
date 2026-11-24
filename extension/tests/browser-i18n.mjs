@@ -37,7 +37,7 @@ for (const [browserLocale, expected] of [['en-US', 'en'], ['zh-TW', 'zh-CN'], ['
       }
       await page.getByRole('button', { name: 'Full privacy notice', exact: true }).click();
       await page.getByRole('heading', { name: 'Local data', exact: true }).waitFor();
-      assert.equal(await page.getByRole('dialog').locator('section').count(), 12);
+      assert.equal(await page.getByRole('dialog').locator('section').count(), 14);
       await page.keyboard.press('Escape');
       await page.getByRole('button', { name: 'Not now', exact: true }).click();
       await page.getByRole('button', { name: 'Back to privacy notice', exact: true }).click();
@@ -60,6 +60,21 @@ for (const [browserLocale, expected] of [['en-US', 'en'], ['zh-TW', 'zh-CN'], ['
     }).click();
     await page.getByRole('banner').waitFor();
     assert.equal(await page.locator('html').getAttribute('lang'), expected);
+    await page.getByRole('button', { name: expected === 'en' ? 'User guide' : '使用指南', exact: true }).click();
+    const guide = page.getByRole('dialog', { name: expected === 'en' ? 'User guide' : '使用指南', exact: true });
+    await guide.getByRole('tab', { name: expected === 'en' ? 'Privacy notice' : '隐私说明', exact: true }).click();
+    const policy = guide.getByRole('tabpanel');
+    await policy.getByRole('heading', { name: expected === 'en' ? 'Browser bookmark authorization' : '浏览器书签授权', exact: true }).waitFor();
+    await policy.getByRole('heading', { name: expected === 'en' ? 'Link health checks' : '链接健康检查', exact: true }).waitFor();
+    for (const width of [320, 390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await guide.evaluate(element => element.scrollWidth > element.clientWidth), false);
+      assert.equal(await guide.getByRole('tab').evaluateAll(elements => elements.every(element =>
+        element.scrollWidth <= element.clientWidth && getComputedStyle(element).whiteSpace === 'nowrap')), true,
+      'Privacy guide tabs keep whole labels and scroll horizontally on narrow screens');
+      await page.screenshot({ path: path.join(screenshots, `guide-privacy-${expected}-${width}.png`), fullPage: true });
+    }
+    await page.keyboard.press('Escape');
     if (expected === 'en') {
       const url = await page.evaluate(() => globalThis.chrome.runtime.getURL('index.html'));
       const other = await context.newPage();

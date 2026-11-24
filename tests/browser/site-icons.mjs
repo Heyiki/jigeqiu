@@ -150,7 +150,32 @@ try {
   await page.getByRole('button', { name: 'Mount icons', exact: true }).click();
   await settled();
   assert.deepEqual([...counts], beforeRemount, 'Remount uses shared successful and failed records');
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('hold-icon-decode')) return;
+    const original = HTMLImageElement.prototype.decode;
+    const gate = new Promise(resolve => { window.resumeIconDecode = resolve; });
+    HTMLImageElement.prototype.decode = async function () {
+      await original.call(this);
+      if (this.classList.contains('site-icon-image')) {
+        window.iconDecodePending = true;
+        await gate;
+      }
+    };
+  });
+  await page.evaluate(() => sessionStorage.setItem('hold-icon-decode', 'true'));
   await page.reload();
+  await page.waitForFunction(() => window.iconDecodePending);
+  const loadingIcon = page.locator('[data-sample="square"] [data-site-icon]');
+  assert.equal(await loadingIcon.getAttribute('data-icon-state'), 'loading');
+  assert.equal(await loadingIcon.locator('[data-fallback-kind]').count(), 0);
+  assert.equal(await loadingIcon.locator('.site-icon-placeholder').count(), 1);
+  assert.equal(await loadingIcon.locator('img').evaluate(img => getComputedStyle(img).visibility), 'hidden');
+  await page.getByRole('button', { name: 'Theme', exact: true }).click();
+  await page.getByRole('button', { name: 'Theme', exact: true }).click();
+  await page.evaluate(() => {
+    sessionStorage.removeItem('hold-icon-decode');
+    window.resumeIconDecode();
+  });
   await settled();
   assert.deepEqual([...counts], beforeRemount, 'Reload restores blobs and failure records without remote re-probing');
   remoteUnavailable = true;
@@ -166,6 +191,32 @@ try {
   failSquare = false;
   await page.getByRole('button', { name: 'Refresh square', exact: true }).click();
   await page.getByText('Refreshed', { exact: true }).waitFor();
+
+  // A late decode from an earlier refresh must not hide the newer artwork.
+  await page.evaluate(() => {
+    const original = HTMLImageElement.prototype.decode;
+    window.staleDecodeStarted = false;
+    const gate = new Promise(resolve => { window.resumeStaleDecode = resolve; });
+    HTMLImageElement.prototype.decode = async function () {
+      await original.call(this);
+      if (this.classList.contains('site-icon-image') && !window.staleDecodeStarted) {
+        window.staleDecodeStarted = true;
+        await gate;
+      }
+    };
+  });
+  const square = page.locator('[data-sample="square"] [data-site-icon]');
+  await page.getByRole('button', { name: 'Refresh square', exact: true }).click();
+  await page.waitForFunction(() => window.staleDecodeStarted);
+  await page.getByRole('button', { name: 'Refresh square', exact: true }).click();
+  await square.locator('img').waitFor({ state: 'visible' });
+  const latestSource = await square.locator('img').getAttribute('src');
+  await page.evaluate(async () => {
+    window.resumeStaleDecode();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  assert.equal(await square.getAttribute('data-icon-state'), 'ready', 'Stale decode cannot hide the latest image');
+  assert.equal(await square.locator('img').getAttribute('src'), latestSource);
 
   const assets = { bookmarks: [{ title: 'Keep', url: 'https://keep.example/' }], folders: [] };
   await page.evaluate(value => localStorage.setItem('icon-test-assets', JSON.stringify(value)), assets);

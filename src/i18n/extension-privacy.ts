@@ -14,7 +14,15 @@ const privacySectionsZh = [
   },
   {
     title: '浏览器权限与新标签页',
-    text: '扩展将新标签页替换为记个球工作台，申请 storage 权限以保存本地数据，contextMenus 权限以提供“收藏到记个球”右键菜单，activeTab 权限仅在你点击菜单或使用扩展快捷键时读取当前网页的网址和标题。待收藏内容临时保存在 chrome.storage.session 中，关闭收藏弹窗或结束浏览器会话后清除；确认表单才写入收藏库。不接管浏览器原生收藏快捷键或收藏星标，不申请 favicon、浏览历史、tabs 或默认的所有网站访问权限，不注入其他网站页面。仅在你主动切换“收藏来源”为“浏览器书签”时申请可选 bookmarks 权限。该权限允许读取和修改全部浏览器书签，本功能仅管理书签栏及其子目录；增删改和右键收藏会直接作用于该来源。切回扩展收藏不会删除或合并两边数据，浏览器来源的附加信息、桌面固定及回收站记录在扩展本地单独保存。浏览器自身可能按其账户同步设置同步原生书签，这由浏览器管理。清单声明 HTTP/HTTPS 可选站点权限。仅在你主动使用链接健康检查时，先说明扫描范围和权限用途，再由你点击一次性授权所有 HTTP/HTTPS 网站访问权限。该权限覆盖全部网站，新增站点无需重复授权；链接检查仅请求所选范围的收藏网址，拒绝授权不开始扫描。扫描结果仅在当前页面内存中保留，刷新或关闭后清空。授权也可能用于已有 HTTPS 图标发现及标题补全功能，已有站点权限可在浏览器扩展管理中撤销。这里的“知晓并继续”仅是应用内告知确认，不会授予网站访问权限。',
+    text: '扩展将新标签页替换为记个球工作台，申请 storage 权限以保存本地数据，contextMenus 权限以提供“收藏到记个球”右键菜单，activeTab 权限仅在你点击菜单或使用扩展快捷键时读取当前网页的网址和标题。待收藏内容临时保存在 chrome.storage.session 中，关闭收藏弹窗或结束浏览器会话后清除；确认表单才写入收藏库。不接管浏览器原生收藏快捷键或收藏星标，不申请 favicon、浏览历史、tabs 或默认的所有网站访问权限，不注入其他网站页面。清单声明可选 bookmarks 权限及 HTTP/HTTPS 站点权限，具体用途和触发时机见下文。这里的“知晓并继续”仅是应用内告知确认，不会授予书签或网站访问权限。',
+  },
+  {
+    title: '浏览器书签授权',
+    text: '仅在你主动切换“收藏来源”为“浏览器书签”时申请可选 bookmarks 权限，拒绝授权不会启用该来源。该权限允许读取和修改全部浏览器书签，本功能仅管理书签栏及其子目录；在此来源下的新增、编辑、删除及右键收藏会直接作用于原生浏览器书签。切回扩展收藏不会删除或合并两边数据。浏览器来源的附加信息、桌面固定及回收站记录在扩展本地单独保存，不上传到开发者服务器。浏览器自身可能按其账户同步设置同步原生书签，这由浏览器管理。你可在浏览器扩展管理页撤销书签权限；撤销后该来源可能无法继续读取或修改，已存在的原生书签不会因撤销授权而自动删除。',
+  },
+  {
+    title: '链接健康检查',
+    text: '仅在你主动启动检查时扫描所选收藏范围。尚未获得完整权限时，会先说明用途，再由你点击申请一次性访问所有 HTTP/HTTPS 网站的可选权限；拒绝授权不会开始扫描。权限覆盖全部网站，新增站点无需重复授权，也可能用于已有 HTTPS 图标发现及标题补全功能，可在浏览器扩展管理页撤销。检查直接向所选网址发送 HEAD 请求，必要时改用 GET；请求包含路径及查询参数，不包含片段，不携带凭据，也不发送来源页面地址。目标网站仍可能收到 IP、完整请求地址及浏览器信息并记录访问，HTTP 请求未加密，请避免检查含敏感令牌的网址。仅在可读取重定向地址并核对其站点权限后继续请求。可暂停或停止检查；结果仅保存在当前页面内存中，刷新或关闭后清空，不上传到开发者服务器。检查本身不会自动修改或删除收藏，移入回收站需由你选择并确认。',
   },
   {
     title: '自动网站图标',
@@ -46,7 +54,7 @@ const privacySectionsZh = [
   },
   {
     title: '告知记录与后续变更',
-    text: '确认后只在本地记录本次告知版本，不发送确认记录。清除该记录或告知版本更新后会再次提示。可随时通过工作台的“隐私说明”入口重新查看；不希望继续使用时，可关闭页面，并在浏览器扩展管理页停用或移除本扩展。',
+    text: '确认后只在本地记录本次告知版本，不发送确认记录。清除该记录或告知版本更新后会再次提示。可随时通过工作台右下角“使用指南”中的“隐私说明”页签重新查看；不希望继续使用时，可关闭页面，并在浏览器扩展管理页停用或移除本扩展。',
   },
   {
     title: '联系与隐私请求',
@@ -65,7 +73,15 @@ const privacySectionsEn = [
   },
   {
     title: 'Browser permissions and new tabs',
-    text: 'The extension replaces new tabs with the JIGEQIU workbench. It requests storage for local data, contextMenus for "Save to JIGEQIU", and activeTab to read the current page URL and title only when you invoke the menu or extension shortcut. Pending captures stay temporarily in chrome.storage.session and are cleared when the capture window closes or the browser session ends. Only confirming the form writes a bookmark. The extension does not override native bookmarking shortcuts or the bookmark star, request favicon, browsing history, tabs or default access to all sites, or inject content into other websites. The optional bookmarks permission is requested only when you choose Browser bookmarks as the bookmark source. This permission can read and change all browser bookmarks; the feature manages only the bookmark bar and its subfolders. Adding, editing, deleting and right-click captures directly affect that source. Switching back to extension bookmarks does not delete or merge either library. Browser-source metadata, desktop pins and recycle bin records are stored separately in the extension. The browser may sync native bookmarks according to its own account settings. The manifest declares optional HTTP/HTTPS site permissions. Only when you start a link health check, its scope and purpose are explained before you click to grant access to all HTTP/HTTPS websites once. This permission covers all websites, including newly added sites. Link checks request only bookmarks in the selected scope; denying access does not start a scan. Scan results stay in page memory and are cleared on reload or close. Grants may also enable existing HTTPS icon discovery and title completion, and can be revoked in browser extension settings. "Acknowledge and continue" only acknowledges this in-app notice; it does not grant website access.',
+    text: 'The extension replaces new tabs with the JIGEQIU workbench. It requests storage for local data, contextMenus for "Save to JIGEQIU", and activeTab to read the current page URL and title only when you invoke the menu or extension shortcut. Pending captures stay temporarily in chrome.storage.session and are cleared when the capture window closes or the browser session ends. Only confirming the form writes a bookmark. The extension does not override native bookmarking shortcuts or the bookmark star, request favicon, browsing history, tabs or default access to all sites, or inject content into other websites. The manifest declares optional bookmarks and HTTP/HTTPS site permissions; their purposes and triggers are described below. "Acknowledge and continue" only acknowledges this in-app notice; it does not grant bookmark or website access.',
+  },
+  {
+    title: 'Browser bookmark authorization',
+    text: 'The optional bookmarks permission is requested only when you choose Browser bookmarks as the bookmark source. Denying it does not enable that source. This permission can read and change all browser bookmarks; the feature manages only the bookmark bar and its subfolders. Adding, editing, deleting and right-click captures in this source directly affect native browser bookmarks. Switching back to extension bookmarks does not delete or merge either library. Browser-source metadata, desktop pins and recycle bin records are stored separately in the extension, without upload to developer servers. Your browser may sync native bookmarks according to its own account settings. You can revoke bookmark permission in browser extension settings. Revocation may prevent further reading or editing through this source; it does not automatically delete existing native bookmarks.',
+  },
+  {
+    title: 'Link health checks',
+    text: 'Checks scan the selected bookmark scope only when you start them. Without full permission, the purpose is explained before you click to request optional access to all HTTP/HTTPS websites once. Denying access does not start a scan. The grant covers all websites, including new sites, and may also enable existing HTTPS icon discovery and title completion. You can revoke it in browser extension settings. Checks send HEAD requests directly to selected URLs, falling back to GET when needed. Requests include paths and query parameters, exclude fragments, and omit credentials and the referring page URL. Destinations may still receive and log your IP address, full request URL and browser information. HTTP is unencrypted; avoid checking URLs containing sensitive tokens. Redirects are requested only if their destination can be read and its site permission verified. You can pause or stop a check. Results stay in page memory and are cleared on reload or close, without upload to developer servers. Checks do not automatically change or delete bookmarks; moving items to the recycle bin requires your selection and confirmation.',
   },
   {
     title: 'Automatic site icons',
@@ -97,7 +113,7 @@ const privacySectionsEn = [
   },
   {
     title: 'Acknowledgment and future changes',
-    text: 'Acknowledging stores only this notice version locally; no acknowledgment record is sent anywhere. Clearing that record or updating the notice version prompts you again. You can reopen it at any time through "Privacy notice" in the workbench. To stop using the extension, close the page and disable or remove it in browser extension settings.',
+    text: 'Acknowledging stores only this notice version locally; no acknowledgment record is sent anywhere. Clearing that record or updating the notice version prompts you again. You can reopen it at any time through the "Privacy notice" tab in "User guide" at the bottom right of the workbench. To stop using the extension, close the page and disable or remove it in browser extension settings.',
   },
   {
     title: 'Contact and privacy requests',

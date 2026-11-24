@@ -1,8 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { PrivacyPage } from './privacy/PrivacyPage';
-import { PrivacyDialog } from './privacy/PrivacyDialog';
+import { PrivacyContent } from './privacy/PrivacyDialog';
+import { PrivacyNoticeContext } from '../src/components/common/PrivacyNoticeContext';
 import { PRIVACY_KEY, PRIVACY_VERSION } from './privacy/content';
 import './styles.css';
 import { createBookmarkSourceStorage, type SourceChrome } from './storage/source';
@@ -27,7 +27,6 @@ function ExtensionApp() {
   const [language, setLanguage] = useState(() => readUserLocale());
   const t = createTranslator(language);
   const [ready, setReady] = useState(acknowledged);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
   useEffect(() => {
     document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
   }, [language]);
@@ -66,19 +65,11 @@ function ExtensionApp() {
     <CapturePage id={capture} language={language} />
   </Suspense></SourceBoundary>;
   return (
-    <>
-      <SourceBoundary language={language}><App /></SourceBoundary>
-      <button
-        type="button"
-        className="extension-privacy-launcher"
-        onClick={() => setPrivacyOpen(true)}
-        aria-label={t('extensionPrivacy')}
-        title={t('extensionPrivacy')}
-      >
-        <ShieldCheck size={19} />
-      </button>
-      {privacyOpen && <PrivacyDialog language={language} onClose={() => setPrivacyOpen(false)} />}
-    </>
+    <SourceBoundary language={language}>
+      <PrivacyNoticeContext.Provider value={<PrivacyContent language={language} />}>
+        <App />
+      </PrivacyNoticeContext.Provider>
+    </SourceBoundary>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { CircleHelp } from 'lucide-react';
 import { DesktopDialog } from './DesktopDialog';
 import { SHORTCUTS } from './app-shortcuts';
@@ -6,6 +6,7 @@ import { actionTerm } from '../common/action-terms';
 import { SYSTEM_COMMANDS } from './spotlight-commands';
 import { createTranslator, resolveLocale } from '../../i18n';
 import type { OnboardingEntry } from '../onboarding/types';
+import { PrivacyNoticeContext } from '../common/PrivacyNoticeContext';
 
 export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }: {
   language?: string;
@@ -14,12 +15,22 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
   onStartOnboarding?(entry: OnboardingEntry): void;
 }) {
   const [section, setSection] = useState(0);
+  const privacyNotice = useContext(PrivacyNoticeContext);
   const [bottom, setBottom] = useState(14);
   const button = useRef<HTMLButtonElement>(null);
+  const tabs = useRef<HTMLDivElement>(null);
   const locale = resolveLocale(language);
   const en = locale === 'en';
   const t = createTranslator(locale);
   const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
+  useEffect(() => {
+    if (!open || !privacyNotice) return;
+    const revealTab = () => tabs.current?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    revealTab();
+    window.addEventListener('resize', revealTab);
+    return () => window.removeEventListener('resize', revealTab);
+  }, [open, section, privacyNotice]);
   useEffect(() => {
     const dock = document.querySelector('[data-testid="bottom-dock"]');
     const measure = () => {
@@ -34,7 +45,8 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
   }, []);
-  const sections = [t('guideGettingStarted'), t('guideKeyboard'), t('guideCommands'), t('guideActions')];
+  const sections = [t('guideGettingStarted'), t('guideKeyboard'), t('guideCommands'), t('guideActions'),
+    ...(privacyNotice ? [t('extensionPrivacy')] : [])];
   const rows = [
     [actionTerm('add', locale), t('guideActionAdd')],
     [actionTerm('pinDesktop', locale), t('guideActionPinDesktop')],
@@ -66,7 +78,7 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
       onClick={() => onOpenChange(true)}><CircleHelp size={19} /></button>
     {open && <DesktopDialog label={t('guideTitle')} title={t('guideTitle')}
       language={locale} busy={false} error="" onClose={() => onOpenChange(false)}>
-      <div role="tablist" aria-label={t('guideSections')} className="mb-4 flex border-b border-black/10 dark:border-white/10">
+      <div ref={tabs} role="tablist" aria-label={t('guideSections')} className="mb-4 flex overflow-x-auto border-b border-black/10 dark:border-white/10">
         {sections.map((label, index) => <button key={index} role="tab" id={`guide-tab-${index}`}
           aria-selected={section === index} aria-controls="guide-panel" tabIndex={section === index ? 0 : -1}
           onClick={() => setSection(index)} onKeyDown={event => {
@@ -77,9 +89,9 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
             setSection(next);
             document.getElementById(`guide-tab-${next}`)?.focus();
           }}
-          className={`min-h-10 min-w-0 flex-1 break-words border-b-2 px-0 py-2 text-[11px] sm:px-2 sm:text-xs ${section === index ? 'border-sky-500 font-semibold text-sky-700 dark:text-sky-300' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>{label}</button>)}
+          className={`min-h-10 min-w-0 border-b-2 py-2 text-[11px] sm:text-xs ${privacyNotice ? 'shrink-0 grow whitespace-nowrap px-2' : 'flex-1 break-words px-0 sm:px-2'} ${section === index ? 'border-sky-500 font-semibold text-sky-700 dark:text-sky-300' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>{label}</button>)}
       </div>
-      <div id="guide-panel" role="tabpanel" aria-labelledby={`guide-tab-${section}`} className="min-h-64 text-sm leading-6">
+      <div id="guide-panel" role="tabpanel" aria-labelledby={`guide-tab-${section}`} tabIndex={section === 4 ? 0 : undefined} className="min-h-64 text-sm leading-6">
         {section === 0 && <>
           {onStartOnboarding && <div className="mb-4 flex flex-wrap gap-2">
             {(['tour', 'import', 'add', 'pin'] as const).map((entry, index) => <button key={entry}
@@ -141,6 +153,7 @@ export function DesktopGuide({ language, open, onOpenChange, onStartOnboarding }
         </>}
         {section === 3 && <dl className="divide-y divide-black/10 dark:divide-white/10">{rows.map(([label, description]) =>
           <div key={label} className="py-2.5"><dt className="font-medium">{label}</dt><dd className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{description}</dd></div>)}</dl>}
+        {section === 4 && <div className="space-y-5 break-words select-text [&_h3]:mb-2 [&_h3]:font-semibold">{privacyNotice}</div>}
       </div>
     </DesktopDialog>}
   </>;

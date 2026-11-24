@@ -23,6 +23,7 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
 }) => {
   const isGradient = backgroundType === 'gradient';
   const [custom, setCustom] = useState<{ id: string; url: string } | null>(null);
+  const [unavailableId, setUnavailableId] = useState<string>();
   const displayedCustom = useRef(custom);
   useLayoutEffect(() => { displayedCustom.current = custom; }, [custom]);
   // Release a displayed image only after React has committed its replacement.
@@ -34,7 +35,7 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
     if (!isGradient && preset === 'custom' && customWallpaperId) {
       void readWallpaper(customWallpaperId).then(async blob => {
         if (cancelled) return;
-        if (!blob) { setCustom(null); return; }
+        if (!blob) { setUnavailableId(customWallpaperId); setCustom(null); return; }
         // Saved images have immutable IDs. Focus checks still detect deletion,
         // but must not replace an unchanged image with a fresh Blob URL.
         if (displayedCustom.current?.id === customWallpaperId) return;
@@ -45,18 +46,25 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
           image.src = url;
           await image.decode();
           if (cancelled) return;
+          setUnavailableId(undefined);
           setCustom({ id: customWallpaperId, url });
           published = true;
         } finally {
           if (!published) URL.revokeObjectURL(url);
         }
-      }).catch(() => { if (!cancelled) setCustom(null); });
+      }).catch(() => {
+        if (!cancelled) { setUnavailableId(customWallpaperId); setCustom(null); }
+      });
     } else {
       setCustom(null);
     }
     return () => { cancelled = true; };
   }, [preset, customWallpaperId, revision, isGradient]);
   const customUrl = !isGradient && preset === 'custom' ? custom?.url : undefined;
+  // Do not load/paint a built-in wallpaper while the selected local image is
+  // being read and decoded. Only use the fallback after a confirmed failure.
+  const customPending = !isGradient && preset === 'custom' && !!customWallpaperId
+    && !customUrl && unavailableId !== customWallpaperId;
   const isDark = appearance === 'dark-glass';
   const isReduced = appearance === 'reduced-transparency';
 
@@ -68,12 +76,15 @@ export const WallpaperBackground: React.FC<WallpaperBackgroundProps> = ({
   }, [isDark, isReduced]);
 
   return (
-    <div data-wallpaper={isGradient ? undefined : visibleWallpaper(preset)} data-background-type={isGradient ? 'gradient' : 'wallpaper'} data-custom-wallpaper={customUrl ? '' : undefined}
+    <div data-wallpaper={isGradient || customPending ? undefined : visibleWallpaper(preset)} data-background-type={isGradient ? 'gradient' : 'wallpaper'} data-custom-wallpaper={customUrl ? '' : undefined}
       style={isGradient ? {
         '--wallpaper-image': gradientImage(gradientBackground),
         '--wallpaper-base': normalizeGradient(gradientBackground).start,
       } as React.CSSProperties : customUrl ? {
         '--wallpaper-image': `url("${customUrl}")`,
+        '--wallpaper-base': '#24282a',
+      } as React.CSSProperties : customPending ? {
+        '--wallpaper-image': 'none',
         '--wallpaper-base': '#24282a',
       } as React.CSSProperties : undefined} className="wallpaper-root relative isolate min-h-screen w-full overflow-x-hidden">
       <div data-wallpaper-canvas="" aria-hidden="true" className="wallpaper-canvas fixed inset-0 -z-20 pointer-events-none" />

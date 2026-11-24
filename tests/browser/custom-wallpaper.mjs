@@ -86,7 +86,30 @@ try {
   assert.deepEqual((await keys()).images, (await keys()).metadata);
   assert.deepEqual(await page.locator('[data-custom-wallpaper-item] [data-wallpaper-name]').allTextContents(),
     ['three.png', 'two.png', 'one.png']);
+  // A slow local decode must not paint the default snow wallpaper first.
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem('hold-wallpaper-decode')) return;
+    const original = HTMLImageElement.prototype.decode;
+    const gate = new Promise(resolve => { window.resumeStartupWallpaper = resolve; });
+    HTMLImageElement.prototype.decode = async function () {
+      await original.call(this);
+      if (this.src.startsWith('blob:')) {
+        window.startupWallpaperDecoding = true;
+        await gate;
+      }
+    };
+  });
+  await page.evaluate(() => sessionStorage.setItem('hold-wallpaper-decode', 'true'));
   await page.reload();
+  await page.waitForFunction(() => window.startupWallpaperDecoding);
+  assert.equal(await page.locator('.wallpaper-root').getAttribute('data-wallpaper'), null,
+    'Custom wallpaper loading must not select the default wallpaper');
+  assert.equal(await page.locator('[data-wallpaper-canvas]').evaluate(el => getComputedStyle(el).backgroundImage), 'none');
+  assert.equal(await input.isEnabled(), true, 'The page stays interactive while wallpaper decoding is pending');
+  await page.evaluate(() => {
+    sessionStorage.removeItem('hold-wallpaper-decode');
+    window.resumeStartupWallpaper();
+  });
   await imageReady();
   // Returning to a tab must keep the already decoded custom image in place.
   for (const event of ['focus', 'visibilitychange', 'wallpaper-change']) {
