@@ -134,10 +134,10 @@ export function LinkHealthView({ controller, platform, bookmarks, folders, langu
     </div>
     {error && <p role="alert" className="break-words text-sm text-rose-600 dark:text-rose-300">{error}</p>}
     <div className="flex flex-wrap gap-2">
-      <input type="search" aria-label={t('healthSearch')} placeholder={t('healthSearch')} value={query} onChange={event => { setQuery(event.target.value); setPage(1); resetSelection(); }} className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 text-sm dark:border-white/20" />
-      <span className="relative ml-auto max-w-full shrink-0"><select aria-label={t('healthFilter')} value={category} onChange={event => { setCategory(event.target.value as typeof category); setPage(1); resetSelection(); }} className={selectStyle}>
+      <span className="relative max-w-full shrink-0"><select aria-label={t('healthFilter')} value={category} onChange={event => { setCategory(event.target.value as typeof category); setPage(1); resetSelection(); }} className={selectStyle}>
         {(['all', 'missing', 'restricted', 'temporary', 'unchecked'] as const).map(value => <option key={value} value={value}>{t(`health_${value}`)}</option>)}
       </select><ChevronDown size={16} aria-hidden="true" className="pointer-events-none absolute right-3 top-3 text-slate-500 dark:text-slate-300" /></span>
+      <input type="search" aria-label={t('healthSearch')} placeholder={t('healthSearch')} value={query} onChange={event => { setQuery(event.target.value); setPage(1); resetSelection(); }} className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 text-sm dark:border-white/20" />
     </div>
     {results.total > 0 && <div className="flex flex-wrap items-center gap-2 text-xs">
       <label className="flex min-h-9 items-center gap-2"><input type="checkbox" aria-label={t('healthSelectPage')} checked={results.items.length > 0 && visibleSelection.length === results.items.length} onChange={event => setSelected(new Set(event.target.checked ? results.items.map(row => row.bookmark.id) : []))} />{t('healthSelectPage')}</label>
