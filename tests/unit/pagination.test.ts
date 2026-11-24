@@ -3,6 +3,7 @@ import test from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Pagination } from '../../src/components/common/Pagination';
+import { PageSizeSelect } from '../../src/components/common/PageSizeSelect';
 
 function elements(tree: React.ReactNode): React.ReactElement<Record<string, any>>[] {
   if (Array.isArray(tree)) return tree.flatMap(elements);
@@ -24,9 +25,16 @@ test('shared pagination renders bounded page numbers and routes page and size ac
     button.props.onClick();
   }
   assert.deepEqual(pages, [1, 49, 51, 100]);
-  nodes.find(node => node.type === 'select')!.props.onChange({ target: { value: '30' } });
+  const sizeSelect = nodes.find(node => node.type === PageSizeSelect);
+  assert.ok(sizeSelect, 'pagination includes the page-size control');
+  assert.equal(sizeSelect.props.value, 15);
+  assert.equal(sizeSelect.props.language, 'en');
+  sizeSelect.props.onChange(30);
   assert.deepEqual(sizes, [30]);
-  assert.match(renderToStaticMarkup(tree), /15.*30.*50.*100/);
+  const markup = renderToStaticMarkup(tree);
+  assert.match(markup, /role="combobox"/);
+  assert.match(markup, /15 per page/);
+  assert.match(markup, /aria-expanded="false"/);
 });
 
 test('pagination handles zero, boundary pages, bilingual copy and pending state', () => {
@@ -38,5 +46,6 @@ test('pagination handles zero, boundary pages, bilingual copy and pending state'
     assert.match(renderToStaticMarkup(tree), language === 'zh' ? /下一页/ : /Next page/);
   }
   const pending = elements(Pagination({ ...props, total: 100, disabled: true }));
-  assert.ok(pending.filter(node => node.type === 'button' || node.type === 'select').every(node => node.props.disabled));
+  assert.ok(pending.find(node => node.type === PageSizeSelect)?.props.disabled);
+  assert.ok(pending.filter(node => node.type === 'button' || node.type === PageSizeSelect).every(node => node.props.disabled));
 });
