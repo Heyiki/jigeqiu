@@ -4,6 +4,10 @@ export const STATE_KEY = 'jigeqiu-extension-state-v1';
 const LOCK = 'jigeqiu:extension:storage';
 type State = { version: 1; revision: number; data: Record<string, string> };
 interface Dependencies {
+  /** Run inside the shared lock, before synchronous business code sees its snapshot. */
+  prepare?(data: Record<string, string>): Promise<void>;
+  /** Return true when external writes have committed before local persistence. */
+  beforeCommit?(before: Record<string, string>, next: Record<string, string>): Promise<boolean | void>;
   area: {
     get(key: string): Promise<Record<string, unknown>>;
     set(values: Record<string, unknown>): Promise<void>;
@@ -116,17 +120,27 @@ export function createExtensionStorage(deps: Dependencies): ApplicationStorageDr
       return deps.locks.request(LOCK, async () => {
         if (blocked) throw blocked;
         running = true;
+        let externalCommitted = false;
         try {
           const current = await read();
           if (!current) throw new Error('CORRUPT_DATA');
+          const original = JSON.stringify(current.data);
           state = current;
+          await deps.prepare?.(current.data);
           draft = { ...current.data };
           const result = action();
           if (result instanceof Promise) throw new Error('ASYNC_STORAGE_ACTION');
+          externalCommitted = (await deps.beforeCommit?.(current.data, draft)) === true;
           const next = { version: 1 as const, revision: current.revision + 1, data: draft };
           draft = undefined;
-          if (JSON.stringify(next.data) !== JSON.stringify(current.data)) await persist(next);
+          if (JSON.stringify(next.data) !== original) await persist(next);
           return result;
+        } catch (cause) {
+          if (externalCommitted || (cause instanceof Error && cause.message === 'COMMIT_UNCERTAIN')) {
+            blocked = new Error('COMMIT_UNCERTAIN', { cause });
+            throw blocked;
+          }
+          throw cause;
         } finally {
           draft = undefined;
           running = false;

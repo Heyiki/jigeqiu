@@ -5,7 +5,9 @@ import { PrivacyPage } from './privacy/PrivacyPage';
 import { PrivacyDialog } from './privacy/PrivacyDialog';
 import { PRIVACY_KEY, PRIVACY_VERSION } from './privacy/content';
 import './styles.css';
-import { createExtensionStorage } from './storage/local';
+import { createBookmarkSourceStorage, type SourceChrome } from './storage/source';
+import { configureBookmarkSourcePlatform } from '../src/services/bookmark-source-platform';
+import { SourceBoundary } from './bookmarks/SourceBoundary';
 import { applicationStorage, configureApplicationStorage, mutateStorage } from '../src/services/application-storage';
 import { readUserLocale } from '../src/services/user-locale';
 import { createTranslator } from '../src/i18n';
@@ -60,12 +62,12 @@ function ExtensionApp() {
       />
     );
   const capture = new URLSearchParams(location.search).get('capture');
-  if (capture !== null) return <Suspense fallback={<p role="status">{t('extensionOpening')}</p>}>
+  if (capture !== null) return <SourceBoundary language={language}><Suspense fallback={<p role="status">{t('extensionOpening')}</p>}>
     <CapturePage id={capture} language={language} />
-  </Suspense>;
+  </Suspense></SourceBoundary>;
   return (
     <>
-      <App />
+      <SourceBoundary language={language}><App /></SourceBoundary>
       <button
         type="button"
         className="extension-privacy-launcher"
@@ -88,15 +90,17 @@ async function start() {
   document.documentElement.lang = language === 'en' ? 'en' : 'zh-CN';
   try {
     const chrome = (globalThis as typeof globalThis & {
-      chrome: { storage: { local: Parameters<typeof createExtensionStorage>[0]['area'];
-        onChanged: Parameters<typeof createExtensionStorage>[0]['changes'] } };
+      chrome: SourceChrome & { storage: { local: Parameters<typeof createBookmarkSourceStorage>[0]['area'];
+        onChanged: Parameters<typeof createBookmarkSourceStorage>[0]['changes'] } };
     }).chrome;
-    const driver = createExtensionStorage({
+    const driver = createBookmarkSourceStorage({
+      chrome,
       area: chrome.storage.local, changes: chrome.storage.onChanged,
       locks: navigator.locks, legacy: () => localStorage,
     });
     await driver.initialize();
     configureApplicationStorage(driver);
+    configureBookmarkSourcePlatform(driver);
     root.render(<ExtensionApp />);
   } catch (cause) {
     console.error('Extension storage initialization failed', cause);

@@ -17,6 +17,7 @@ import {
   DEFAULT_USER_SETTINGS,
 } from '../data/defaultData';
 import { normalizeBookmarkUrl, parseBookmarkKeywords, normalizeBookmarkIcon } from './bookmark-input';
+import { getBookmarkSourcePlatform } from './bookmark-source-platform';
 import type { Layout } from '../domain/assets/model';
 import {
   applyDesktopActions, emptyDesktopLayout, reconcileDesktopLayout, validateDesktopLayout,
@@ -279,10 +280,15 @@ export class StorageManager {
     const current = this.readLibrary();
     if ((this.bookmarkBase !== undefined && this.bookmarkBase !== JSON.stringify(current.bookmarks))
       || (this.folderBase !== undefined && this.folderBase !== JSON.stringify(current.folders))) throw new Error('CONFLICT');
-    const url = normalizeBookmarkUrl(input.url);
-    if (current.bookmarks.some(item => item.id !== existingId && normalizeBookmarkUrl(item.url) === url)) throw new Error('DUPLICATE');
-    if (input.folderId && !current.folders.some(folder => folder.id === input.folderId)) throw new Error('INVALID_REFERENCE');
     const previous = existingId ? current.bookmarks.find(item => item.id === existingId) : undefined;
+    const url = normalizeBookmarkUrl(input.url, previous?.url);
+    const unchangedUrl = existingId !== undefined && current.bookmarks.some(item => item.id === existingId && item.url === url);
+    if (!unchangedUrl && current.bookmarks.some(item => {
+      if (item.id === existingId) return false;
+      try { return normalizeBookmarkUrl(item.url) === url; }
+      catch { return false; } // Native bookmarklets and browser pages cannot duplicate an HTTP(S) input.
+    })) throw new Error('DUPLICATE');
+    if (input.folderId && !current.folders.some(folder => folder.id === input.folderId)) throw new Error('INVALID_REFERENCE');
     if (existingId && !previous) throw new Error('NOT_FOUND');
     const layout = this.getDesktopLayout();
     if (this.desktopBase !== this.librarySnapshots.get(current)) throw new Error('CONFLICT');
@@ -317,7 +323,7 @@ export class StorageManager {
       }]);
     }
     this.commitLibrary(current, next, nextLayout);
-    return bookmark;
+    return this.readLibrary().bookmarks.find(item => item.id === bookmark.id)!;
   }
   readLibrary(): { bookmarks: Bookmark[]; folders: Folder[] } {
     const source = this.sourceRaw();
@@ -354,6 +360,22 @@ export class StorageManager {
   private commitLibrary(expected: DesktopLibrary, next: DesktopLibrary, desktopLayout?: Layout, collections?: Collection[],
     extras?: { bookmarkTrash?: BookmarkTrashEntry[]; folderTrash?: FolderTrashEntry[]; dockBookmarkIds?: string[] }): void {
     this.assertRestoreReady();
+    if (getBookmarkSourcePlatform()?.source() === 'browser') {
+      const previous = new Map(expected.bookmarks.map(bookmark => [bookmark.id, bookmark]));
+      const moved = new Set(next.bookmarks.filter(bookmark => previous.has(bookmark.id)
+        && previous.get(bookmark.id)!.folderId !== bookmark.folderId).map(bookmark => bookmark.id));
+      const tail = new Map<string | undefined, number>();
+      for (const bookmark of next.bookmarks) {
+        if (!moved.has(bookmark.id)) tail.set(bookmark.folderId, Math.max(tail.get(bookmark.folderId) ?? -1, bookmark.order));
+      }
+      for (const folder of next.folders) tail.set(folder.parentId, Math.max(tail.get(folder.parentId) ?? -1, folder.order));
+      next = { ...next, bookmarks: next.bookmarks.map(bookmark => {
+        if (!moved.has(bookmark.id)) return bookmark;
+        const order = (tail.get(bookmark.folderId) ?? -1) + 1;
+        tail.set(bookmark.folderId, order);
+        return { ...bookmark, order };
+      }) };
+    }
     if (extras?.bookmarkTrash !== undefined) readBookmarkTrash(extras.bookmarkTrash);
     if (extras?.folderTrash !== undefined) readFolderTrash(extras.folderTrash);
     const current = this.readLibrary();
@@ -475,7 +497,7 @@ export class StorageManager {
       updatedAt: Date.now(),
     };
     this.saveBookmarks(bookmarks);
-    return bookmarks[index];
+    return this.readLibrary().bookmarks.find(bookmark => bookmark.id === id)!;
   }
 
   deleteBookmark(id: string): Bookmark | null {
@@ -525,7 +547,7 @@ export class StorageManager {
 
   private activeBookmarkUrls(bookmarks: Bookmark[]): Set<string> {
     return new Set(bookmarks.flatMap(bookmark => {
-      try { return [normalizeBookmarkUrl(bookmark.url)]; }
+      try { return [normalizeBookmarkUrl(bookmark.url, bookmark.url)]; }
       catch { return []; } // Unrelated legacy URLs stay untouched, but cannot collide with a valid HTTP(S) URL.
     }));
   }
@@ -537,10 +559,10 @@ export class StorageManager {
     if (this.trashBase !== JSON.stringify(trash)) throw new Error('CONFLICT');
     const entry = trash.find(item => item.id === entryId);
     if (!entry) throw new Error('NOT_FOUND');
-    const url = normalizeBookmarkUrl(entry.bookmark.url);
+    const url = normalizeBookmarkUrl(entry.bookmark.url, entry.bookmark.url);
     if (current.folders.some(item => item.id === entry.bookmark.id)
       || current.bookmarks.some(item => item.id === entry.bookmark.id)
-      || this.activeBookmarkUrls(current.bookmarks).has(url)) throw new Error('DUPLICATE');
+      || (getBookmarkSourcePlatform()?.source() !== 'browser' && this.activeBookmarkUrls(current.bookmarks).has(url))) throw new Error('DUPLICATE');
     const parent = current.folders.find(folder => folder.id === entry.bookmark.folderId);
     const bookmark = { ...entry.bookmark, folderId: parent?.id, pinnedToDesktop: false, updatedAt: Date.now() };
     // Earlier batch members still in Trash do not occupy an active array position.
@@ -754,7 +776,7 @@ export class StorageManager {
     for (const item of [...(layout?.folders ?? []), ...(layout?.shortcuts ?? []), ...(layout?.dock ?? [])]) occupied.add(item.id);
     if (entry.folders.some(({ folder }) => occupied.has(folder.id))
       || entry.bookmarks.some(({ bookmark }) => occupied.has(bookmark.id)
-        || activeUrls.has(normalizeBookmarkUrl(bookmark.url)))) {
+        || (getBookmarkSourcePlatform()?.source() !== 'browser' && activeUrls.has(normalizeBookmarkUrl(bookmark.url, bookmark.url))))) {
       throw new Error('DUPLICATE');
     }
     const folders = [...current.folders];

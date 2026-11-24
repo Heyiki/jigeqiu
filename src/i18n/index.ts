@@ -8,6 +8,7 @@ type ParametersFor<K extends MessageKey> = Slots<MessageCatalog[K]['en']>;
 type ValuesFor<K extends MessageKey> = [ParametersFor<K>] extends [never]
   ? [] : [values: Record<ParametersFor<K>, string | number>];
 
+import { bookmarkSourceMessages } from './bookmark-source';
 import { bookmarkMessages } from './bookmarks';
 import { dataTransferMessages } from './data-transfer';
 import { guideMessages } from './guide';
@@ -28,6 +29,7 @@ import { extensionMessages } from './extension';
 import { linkHealthMessages } from './link-health';
 
 const catalog = {
+  ...bookmarkSourceMessages,
   ...linkHealthMessages,
   ...bookmarkMessages,
   ...dataTransferMessages,

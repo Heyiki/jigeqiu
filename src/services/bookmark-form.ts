@@ -15,7 +15,7 @@ export function bookmarkFormInput(
   options: { bookmark?: Bookmark; pinToDesktop?: boolean; order?: number } = {},
 ): Omit<Bookmark, 'id' | 'createdAt' | 'updatedAt'> {
   const previous = options.bookmark;
-  const url = normalizeBookmarkUrl(draft.url);
+  const url = normalizeBookmarkUrl(draft.url, previous?.url);
   return {
     category: 'cat-inbox', collectionIds: [], order: options.order ?? 0,
     pinnedToDesktop: options.pinToDesktop ?? false,
@@ -38,7 +38,12 @@ export function defaultBookmarkTitle(input: string): string {
 
 export function findDuplicateBookmark(bookmarks: Bookmark[], input: string, existingId?: string): Bookmark | undefined {
   try {
-    const url = normalizeBookmarkUrl(input);
+    const existing = bookmarks.find(bookmark => bookmark.id === existingId);
+    const url = normalizeBookmarkUrl(input, existing?.url);
+    if (existing) {
+      try { if (normalizeBookmarkUrl(existing.url, existing.url) === url) return undefined; }
+      catch { /* A malformed legacy item must not hide other duplicates. */ }
+    }
     return bookmarks.find(bookmark => {
       if (bookmark.id === existingId) return false;
       try { return normalizeBookmarkUrl(bookmark.url) === url; }

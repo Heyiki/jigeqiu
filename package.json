@@ -37,6 +37,7 @@
     "build:extension:migrate": "node extension/scripts/build.mjs --legacy-id",
     "package:extension": "node extension/scripts/package.mjs",
     "test:extension": "node --import tsx --test extension/tests/*.test.mjs",
+    "test:browser:bookmark-source": "npm run build:extension && node extension/tests/bookmark-source-browser.mjs",
     "test:browser:link-health": "npm run build:extension && node extension/tests/link-health-browser.mjs",
     "test:browser:extension": "npm run build:extension && node extension/tests/browser.mjs && node extension/tests/browser-i18n.mjs && node extension/tests/browser-capture.mjs",
     "preview": "vite preview",

@@ -56,3 +56,21 @@ test('duplicate detection ignores the current item and malformed legacy records'
   assert.equal(findDuplicateBookmark(items, 'old.example', 'one'), undefined);
   assert.equal(findDuplicateBookmark(items, 'https://'), undefined);
 });
+
+test('editing an existing duplicate without changing its URL preserves both entries', () => {
+  const copies = [bookmark, { ...bookmark, id: 'two', title: 'Different purpose' }];
+  assert.equal(findDuplicateBookmark(copies, bookmark.url, bookmark.id), undefined);
+  assert.equal(findDuplicateBookmark(copies, bookmark.url)?.id, 'one');
+});
+
+test('browser mode can rename an existing native URL but cannot introduce a new script URL', async () => {
+  const { configureBookmarkSourcePlatform } = await import('../../src/services/bookmark-source-platform');
+  configureBookmarkSourcePlatform({ source: () => 'browser', problem: () => undefined, subscribe: () => () => {}, switchSource: async () => {} });
+  try {
+    const existing = { ...bookmark, url: 'chrome://settings/' };
+    const result = bookmarkFormInput({ ...draft, url: existing.url }, { bookmark: existing });
+    assert.equal(result.url, 'chrome://settings/');
+    assert.throws(() => bookmarkFormInput({ ...draft, url: 'javascript:alert(1)' }, { bookmark: existing }));
+    assert.throws(() => bookmarkFormInput({ ...draft, url: existing.url }));
+  } finally { configureBookmarkSourcePlatform(undefined); }
+});

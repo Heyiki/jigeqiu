@@ -12,6 +12,7 @@
       "description": "__MSG_captureCommand__"
     }
   },
+  "optional_permissions": ["bookmarks"],
   "optional_host_permissions": ["https://*/*", "http://*/*"],
   "chrome_url_overrides": {
     "newtab": "index.html"

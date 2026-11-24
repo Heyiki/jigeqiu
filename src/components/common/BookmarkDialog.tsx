@@ -6,6 +6,7 @@ import { bookmarkFormInput, defaultBookmarkTitle, findDuplicateBookmark } from '
 import { fetchBookmarkTitle } from '../../services/bookmark-title';
 import { withCollectionMutation } from '../../services/collection-mutation';
 import { preferenceSaveError } from '../../services/preference-save-error';
+import { BookmarkSourceNotice } from './BookmarkSourceSettings';
 import { Modal } from './Modal';
 import { SiteIconPicker, type SiteIconChoice } from './SiteIconPicker';
 import { FolderTreeSelect } from './FolderTreeSelect';
@@ -94,7 +95,7 @@ function BookmarkDialogSession({
   }, [url, bookmark]);
   const duplicate = findDuplicateBookmark(existingBookmarks, url, bookmark?.id);
   let validUrl = false;
-  try { normalizeBookmarkUrl(url); validUrl = true; } catch { /* Keep URL guidance until validation succeeds. */ }
+  try { normalizeBookmarkUrl(url, bookmark?.url); validUrl = true; } catch { /* Keep URL guidance until validation succeeds. */ }
   const close = () => { if (!pending.current) onClose(); };
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -105,7 +106,7 @@ function BookmarkDialogSession({
     setFailure(null);
     setConflict(false);
     try {
-      normalizeBookmarkUrl(url);
+      normalizeBookmarkUrl(url, bookmark?.url);
       if (!title.trim()) { setFailure({ key: 'enterWebsiteName' }); return; }
       const input = bookmarkFormInput({ title, url, folderId, keywords, ...icon }, {
         bookmark, pinToDesktop, order: existingBookmarks.length + 1,
@@ -171,6 +172,7 @@ function BookmarkDialogSession({
     closeLabel={`${t('extensionCaptureClose')} (Esc)`}
     title={t(bookmark ? 'editBookmark' : 'addBookmark')}>
     <form data-bookmark-form onSubmit={submit} aria-busy={busy} className="min-w-0 text-slate-800 dark:text-slate-100">
+      <BookmarkSourceNotice language={language} />
       {onboarding?.task === 'add' && <TaskHint language={language}
         message={validUrl ? 'onboardingAddDetails' : 'onboardingAddUrl'} onDismiss={onboarding.onExit} />}
       <fieldset disabled={busy} inert={busy || undefined} className="min-w-0 space-y-4 border-0 p-0">
