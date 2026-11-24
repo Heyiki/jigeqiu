@@ -11,6 +11,7 @@ import {
   PublicUser,
   UserSettings
 } from '../types';
+import { DEFAULT_LAUNCHPAD_BLUR } from '../services/launchpad-background';
 
 export const DEFAULT_CATEGORIES: Category[] = [
   { id: 'cat-work', name: '工作', icon: 'Briefcase', color: '#0ea5e9', order: 1, isDefault: true },
@@ -1071,6 +1072,7 @@ export const DEFAULT_PUBLIC_USERS: PublicUser[] = [
 export const DEFAULT_USER_SETTINGS: UserSettings = {
   appearanceMode: 'light-glass',
   wallpaperPreset: 'snow-mountain',
+  launchpadBackgroundBlur: DEFAULT_LAUNCHPAD_BLUR,
   desktopViewMode: 'icon',
   defaultSearchEngineId: 'se-google',
   confirmBatchOpen: true,

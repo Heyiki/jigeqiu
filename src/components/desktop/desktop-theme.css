@@ -46,7 +46,8 @@
   color: var(--desktop-text);
 }
 
-.reduced-transparency .launchpad-shell::after {
+.reduced-transparency .launchpad-shell::after,
+.reduced-transparency .launchpad-preview::after {
   background: var(--desktop-launchpad);
 }
 
@@ -66,7 +67,8 @@
     --desktop-launchpad: #1b2123;
   }
 
-  .launchpad-shell::after {
+  .launchpad-shell::after,
+  .launchpad-preview::after {
     background: var(--desktop-launchpad);
   }
 
@@ -78,7 +80,8 @@
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .desktop-dialog-backdrop,
-  .launchpad-shell::after {
+  .launchpad-shell::after,
+  .launchpad-preview::after {
     background: var(--desktop-launchpad);
   }
 

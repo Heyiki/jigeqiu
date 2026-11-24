@@ -63,6 +63,7 @@
     "test:browser:desktop-mouse": "node tests/browser/desktop-mouse.mjs",
     "test:browser:desktop-folders": "node tests/browser/desktop-folders.mjs",
     "test:browser:launchpad": "node tests/browser/launchpad.mjs",
+    "test:browser:launchpad-background": "node tests/browser/launchpad-background.mjs",
     "test:browser:launchpad-gestures": "node tests/browser/launchpad-gestures.mjs",
     "test:browser:launchpad-inertia": "node tests/browser/launchpad-inertia.mjs",
     "test:browser:launchpad-scroll-ownership": "node tests/browser/launchpad-scroll-ownership.mjs",

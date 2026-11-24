@@ -207,6 +207,7 @@ export interface UserSettings {
   wallpaperPreset: WallpaperPreset;
   backgroundType?: 'wallpaper' | 'gradient';
   gradientBackground?: GradientBackground;
+  launchpadBackgroundBlur?: number;
   customWallpaperId?: string;
   customWallpaperFit?: WallpaperFit;
   desktopViewMode: DesktopViewMode;

@@ -13,6 +13,7 @@ import { FolderTreeSelect } from '../common/FolderTreeSelect';
 import { buildFolderTree, indexFolderPaths, visibleFolderRows } from '../common/folder-tree';
 import { BookmarkSourceSettings } from '../common/BookmarkSourceSettings';
 import { IconCacheSettings } from '../common/IconCacheSettings';
+import { LaunchpadSettings } from '../common/LaunchpadSettings';
 import { storage } from '../../services/storage';
 import {
   BookmarkCheck,
@@ -1511,6 +1512,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
           </div>
 
           <WallpaperSettings settings={userSettings} onUpdate={onUpdateSettings} />
+          <LaunchpadSettings settings={userSettings} onUpdate={onUpdateSettings} />
 
           {/* Dock Preferences Section */}
           <div className="pt-4 border-t border-slate-200/50 dark:border-white/10 space-y-4">
