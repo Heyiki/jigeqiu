@@ -44,13 +44,14 @@ try {
   const setup = await context.newPage();
   await setup.goto('chrome://newtab/');
   await setup.getByRole('heading', { name: '使用前的隐私告知', exact: true }).waitFor();
+  const privacyVersion = (await setup.locator('.privacy-version').innerText()).match(/\d{4}-\d{2}-\d{2}\.\d+/)[0];
   const report = {
     browser: context.browser()?.version(),
     conditions: 'Actual unpacked extension; synthetic Chinese/English data; external requests blocked; 1440x1000; no CPU throttle. Desktop and drawer measured after two animation frames. First sample per count cold page, subsequent samples warm. Timings are local lab results.',
     samples: [],
   };
   for (const count of counts) {
-    await setup.evaluate(async count => {
+    await setup.evaluate(async ({ count, privacyVersion }) => {
       const bookmarks = Array.from({ length: count }, (_, index) => ({
         id: `bookmark-${index}`, title: `资源工具 Resource ${index}`, url: `https://startup.invalid/${index}`,
         domain: 'startup.invalid', notes: '工作开发工具', keywords: ['收藏', 'tool'],
@@ -63,12 +64,12 @@ try {
       }));
       await chrome.storage.local.set({ 'jigeqiu-extension-state-v1': {
         version: 1, revision: count + 1, data: {
-          'jigeqiu-extension-privacy-acknowledged': '2026-11-12.1',
+          'jigeqiu-extension-privacy-acknowledged': privacyVersion,
           jipage_library_v2: JSON.stringify({ version: 1, bookmarks, folders, collections: [], bookmarkTrash: [], folderTrash: [], dockBookmarkIds: [] }),
           jipage_settings_v1: JSON.stringify({ language: 'zh', wallpaperPreset: 'misty-mountains' }),
         },
       } });
-    }, count);
+    }, { count, privacyVersion });
     for (let sample = 0; sample < repeats; sample++) {
       const page = await context.newPage();
       page.setDefaultTimeout(60000);

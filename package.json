@@ -40,6 +40,7 @@
     "test:browser:bookmark-source": "npm run build:extension && node extension/tests/bookmark-source-browser.mjs",
     "test:browser:link-health": "npm run build:extension && node extension/tests/link-health-browser.mjs",
     "test:browser:extension": "npm run build:extension && node extension/tests/browser.mjs && node extension/tests/browser-i18n.mjs && node extension/tests/browser-capture.mjs",
+    "test:browser:startup-assets": "npm run build:extension && node extension/tests/startup-assets.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "eslint . --max-warnings=0",

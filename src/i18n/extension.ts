@@ -31,8 +31,8 @@ export const extensionMessages = {
     en: 'Bookmarks, settings and wallpapers stay in this browser. Cloud sync is not available.',
   },
   extensionSummaryPermissions: {
-    zh: '扩展替换浏览器新标签页；未授权网站使用普通图片加载。主动使用链接健康检查时，会先说明用途，再一次性申请所有 HTTP/HTTPS 网站的可选访问权限；授权后新增站点无需重复申请，可在扩展设置中撤销。',
-    en: 'This extension replaces your new tab page. Sites without access permission use ordinary image loading. Starting a link health check explains its purpose before requesting optional access to all HTTP/HTTPS websites once. New sites need no repeated grant; access can be revoked in extension settings.',
+    zh: '扩展替换浏览器新标签页；切换到“浏览器书签”来源时，才申请可读写原生书签的可选权限。未授权网站使用普通图片加载。主动使用链接健康检查时，会先说明用途，再一次性申请所有 HTTP/HTTPS 网站的可选访问权限；授权后新增站点无需重复申请，可在扩展设置中撤销。',
+    en: 'This extension replaces your new tab page. Optional permission to read and change native bookmarks is requested only when you choose Browser bookmarks as the source. Sites without access permission use ordinary image loading. Starting a link health check explains its purpose before requesting optional access to all HTTP/HTTPS websites once. New sites need no repeated grant; access can be revoked in extension settings.',
   },
   extensionSummaryRemote: {
     zh: '远程图片、外部搜索、收藏链接及嵌入网页可能连接第三方网站，对方可能收到 IP、搜索词或浏览器请求信息。',

@@ -218,6 +218,7 @@ try {
     assert.equal(await opener.evaluate(element => document.activeElement === element), true);
   }
   await page.getByRole('banner').getByRole('button', { name: 'Manage', exact: true }).click();
+  await page.getByRole('button', { name: 'User guide', exact: true }).waitFor({ state: 'hidden' });
   await page.keyboard.press('Control+k');
   assert.equal(await search.count(), 0, 'Management retains browser/native keyboard behavior');
   assert.equal(await page.getByRole('button', { name: 'User guide', exact: true }).count(), 0);

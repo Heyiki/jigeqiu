@@ -109,23 +109,6 @@
   color: #58616a;
   font-size: 13px;
 }
-.extension-privacy-launcher {
-  position: fixed;
-  z-index: 40;
-  bottom: 60px;
-  left: 16px;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #bec7cc;
-  border-radius: 6px;
-  background: #fff;
-  color: #006c8b;
-}
-.extension-privacy-launcher:hover {
-  background: #eef6f8;
-}
 .extension-privacy-dialog {
   box-sizing: border-box;
   margin: auto;
@@ -198,10 +181,6 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 16px 24px 24px;
-}
-.extension-privacy-launcher:focus-visible {
-  outline: 3px solid #2c8499;
-  outline-offset: 3px;
 }
 .extension-remote-image-notice {
   margin: 8px 0;

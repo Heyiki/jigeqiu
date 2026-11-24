@@ -207,9 +207,21 @@ try {
     0,
   );
   await page.getByRole('button', { name: '暂时跳过', exact: true }).click();
-  await page.getByRole('button', { name: '隐私说明', exact: true }).click();
-  await page.getByRole('heading', { name: '隐私说明', exact: true }).waitFor();
-  await page.getByRole('button', { name: '关闭隐私说明', exact: true }).click();
+  assert.equal(await page.locator('.extension-privacy-launcher').count(), 0, 'No separate privacy launcher remains');
+  const guideButton = page.getByRole('button', { name: '使用指南', exact: true });
+  await guideButton.click();
+  const guide = page.getByRole('dialog', { name: '使用指南', exact: true });
+  assert.equal(await guide.getByRole('tab').count(), 5);
+  const privacyTab = guide.getByRole('tab', { name: '隐私说明', exact: true });
+  await guide.getByRole('tab', { name: '快速上手', exact: true }).focus();
+  await page.keyboard.press('End');
+  assert.equal(await privacyTab.evaluate(element => document.activeElement === element), true);
+  const privacyPanel = guide.getByRole('tabpanel');
+  await privacyPanel.getByRole('heading', { name: '浏览器书签授权', exact: true }).waitFor();
+  await privacyPanel.getByRole('heading', { name: '链接健康检查', exact: true }).waitFor();
+  await privacyPanel.getByText(/HEAD.*GET/).waitFor();
+  await page.keyboard.press('Escape');
+  assert.equal(await guideButton.evaluate(element => document.activeElement === element), true);
   await page.getByRole('banner').waitFor();
   await page.keyboard.press('Control+Shift+Enter');
   const dialog = page.getByRole('dialog', { name: '添加收藏', exact: true });

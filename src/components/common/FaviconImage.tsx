@@ -36,6 +36,7 @@ function TextIcon({ title, url }: { title: string; url: string }) {
 function ResolvedIcon({ url, title, icon, iconMode, platformIcon, size = 'md', className = '', showTitle = true }: FaviconImageProps) {
   const [state, setState] = useState(() => peekSiteIcon({ url, icon, iconMode, platformIcon }));
   const [failedSrc, setFailedSrc] = useState('');
+  const [decodedSrc, setDecodedSrc] = useState('');
   const [watching, setWatching] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -64,12 +65,25 @@ function ResolvedIcon({ url, title, icon, iconMode, platformIcon, size = 'md', c
     return () => { observer.disconnect(); unsubscribe(); };
   }, [url, icon, iconMode, platformIcon]);
   const src = state.status === 'ready' && state.src !== failedSrc ? state.src : undefined;
+  const ready = !!src && decodedSrc === src;
+  const pending = state.status === 'loading' || (!!src && !ready);
   return <div ref={root}
-    className={`site-icon site-icon-${size} ${className}`} data-site-icon="" data-icon-state={src ? 'ready' : state.status === 'loading' ? watching ? 'loading' : 'deferred' : 'fallback'}
+    className={`site-icon site-icon-${size} ${className}`} data-site-icon="" data-icon-state={ready ? 'ready' : pending ? watching ? 'loading' : 'deferred' : 'fallback'}
     role="img" aria-label={title || 'Website'} title={showTitle ? title : undefined}
     style={{ background: 'transparent', borderRadius: 0, overflow: 'visible', letterSpacing: 0 }}>
-    {src ? <img src={src} alt="" referrerPolicy="no-referrer" draggable={false}
-      onError={() => setFailedSrc(src)} className="site-icon-image" /> : <TextIcon title={title} url={url} />}
+    {src && <img src={src} alt="" referrerPolicy="no-referrer" draggable={false} decoding="async"
+      style={{ visibility: ready ? 'visible' : 'hidden' }}
+      onLoad={event => {
+        const image = event.currentTarget;
+        void image.decode().then(() => {
+          if (image.isConnected && image.getAttribute('src') === src) setDecodedSrc(src);
+        }).catch(() => {
+          if (image.isConnected && image.getAttribute('src') === src) setFailedSrc(src);
+        });
+      }}
+      onError={() => setFailedSrc(src)} className="site-icon-image" />}
+    {pending ? <div className="site-icon-placeholder" aria-hidden="true" /> :
+      !ready && <TextIcon title={title} url={url} />}
   </div>;
 }
 

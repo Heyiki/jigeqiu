@@ -27,6 +27,16 @@
   box-shadow: none;
 }
 
+/* Keep geometry stable without flashing an unrelated colored letter icon. */
+.site-icon-placeholder {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
 .site-icon-fallback {
   display: flex;
   align-items: center;
