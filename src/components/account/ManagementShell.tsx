@@ -1,9 +1,10 @@
 import React from 'react';
-import { Library, Search, Sliders, Upload, Trash2 } from 'lucide-react';
+import { Activity, Library, Search, Sliders, Upload, Trash2 } from 'lucide-react';
 import { createTranslator } from '../../i18n';
 import { BackToTop } from '../common/BackToTop';
+import { getLinkHealthPlatform } from '../../services/link-health-platform';
 
-export type ManagementSection = 'bookmarks' | 'engines' | 'appearance' | 'import-export' | 'trash';
+export type ManagementSection = 'bookmarks' | 'engines' | 'appearance' | 'import-export' | 'link-health' | 'trash';
 const groups = [
   { label: 'managementGroupContent', items: [
     { id: 'bookmarks', label: 'managementSectionBookmarks', icon: Library },
@@ -14,6 +15,7 @@ const groups = [
   ] },
   { label: 'managementGroupData', items: [
     { id: 'import-export', label: 'managementSectionImportExport', icon: Upload },
+    { id: 'link-health', label: 'healthTitle', icon: Activity },
     { id: 'trash', label: 'managementSectionTrash', icon: Trash2 },
   ] },
 ] as const;
@@ -25,6 +27,7 @@ export function ManagementShell({ section, onNavigate, onSectionIntent, language
   showDock?: boolean; dockIconSize?: number;
 }) {
   const t = createTranslator(language);
+  const visibleGroups = groups.map(group => ({ ...group, items: group.items.filter(item => item.id !== 'link-health' || Boolean(getLinkHealthPlatform())) }));
   const selected = groups.flatMap(group => [...group.items]).find(item => item.id === section)!;
   return <div className="min-h-[calc(100dvh-60px)] w-full bg-white/90 dark:bg-[#11151e]/95">
     <div className="mx-auto w-full max-w-[1440px] px-3 py-5 sm:px-8 sm:py-6">
@@ -37,14 +40,14 @@ export function ManagementShell({ section, onNavigate, onSectionIntent, language
       <select aria-label={t('managementSectionLabel')} value={section}
         onChange={event => onNavigate(event.target.value as ManagementSection)}
         className="h-10 w-full rounded-lg border border-slate-300 bg-white/70 px-3 text-sm text-slate-800 dark:border-white/15 dark:bg-white/10 dark:text-slate-100">
-        {groups.map(group => <optgroup key={group.label} label={t(group.label)}>
+        {visibleGroups.map(group => <optgroup key={group.label} label={t(group.label)}>
           {group.items.map(item => <option key={item.id} value={item.id}>{t(item.label)}</option>)}
         </optgroup>)}
       </select>
     </div>
     <div className="flex min-w-0 items-start gap-5 lg:gap-7">
       <nav aria-label={t('managementNavigationLabel')} className="hidden w-40 shrink-0 space-y-5 border-r border-slate-300/60 pr-4 dark:border-white/10 md:block">
-        {groups.map(group => <div key={group.label}>
+        {visibleGroups.map(group => <div key={group.label}>
           <h2 className="mb-2 px-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">{t(group.label)}</h2>
           <div className="space-y-1">{group.items.map(item => <button key={item.id} type="button"
             aria-current={section === item.id ? 'page' : undefined} onClick={() => onNavigate(item.id)}

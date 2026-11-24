@@ -11,6 +11,7 @@ import { FaviconImage } from '../common/FaviconImage';
 import { BookmarkDialog } from '../common/BookmarkDialog';
 import { FolderTreeSelect } from '../common/FolderTreeSelect';
 import { buildFolderTree, indexFolderPaths, visibleFolderRows } from '../common/folder-tree';
+import { BookmarkSourceSettings } from '../common/BookmarkSourceSettings';
 import { IconCacheSettings } from '../common/IconCacheSettings';
 import { storage } from '../../services/storage';
 import {
@@ -678,6 +679,7 @@ export const UserCenterView: React.FC<UserCenterViewProps> = ({
       {/* ======================================================== */}
       {/* TAB 1: CHROME-STYLE BOOKMARKS & FOLDER HIERARCHY MANAGER */}
       {/* ======================================================== */}
+      {activeTab === 'bookmarks' && <BookmarkSourceSettings language={userSettings.language} />}
       {activeTab === 'bookmarks' && (
         <div className="flex flex-col md:flex-row gap-5 items-start">
           {/* Left Sidebar: Folder Tree Navigation */}

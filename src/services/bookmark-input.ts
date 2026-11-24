@@ -1,7 +1,11 @@
 import type { SiteIconMode } from '../types';
+import { getBookmarkSourcePlatform } from './bookmark-source-platform';
 
-export function normalizeBookmarkUrl(input: string): string {
+export function normalizeBookmarkUrl(input: string, existingUrl?: string): string {
   const value = input.trim();
+  // Preserve an existing native URL verbatim when editing or restoring it.
+  // This does not allow new bookmarklets or browser URLs through the web form.
+  if (existingUrl !== undefined && value === existingUrl && getBookmarkSourcePlatform()?.source() === 'browser') return existingUrl;
   if (!value) throw new Error('请输入网址');
   if (/^(javascript|data|file|vbscript|about|mailto|tel):/i.test(value)
     || (/^[a-z][a-z\d+.-]*:\/\//i.test(value) && !/^https?:\/\//i.test(value))) {

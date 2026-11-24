@@ -14,10 +14,11 @@ export interface FolderTreeSelectProps {
   excludedIds?: string[];
   onCreateFolder?: (name: string, parentId?: string) => Folder | Promise<Folder>;
   rootLabel?: string;
+  disabled?: boolean;
 }
 
 export function FolderTreeSelect({
-  folders, value, onChange, language, label, excludedIds, onCreateFolder, rootLabel,
+  folders, value, onChange, language, label, excludedIds, onCreateFolder, rootLabel, disabled = false,
 }: FolderTreeSelectProps) {
   const t = createTranslator(language);
   const caption = label ?? t('bookmarkLocation');
@@ -70,6 +71,7 @@ export function FolderTreeSelect({
   }
 
   function show() {
+    if (disabled) return;
     setExpanded(new Set(selected?.path.slice(0, -1).map(folder => folder.id) ?? []));
     setActiveId(selectedId);
     setSearch('');
@@ -110,6 +112,7 @@ export function FolderTreeSelect({
   }
 
   function choose(folderId: string | undefined) {
+    if (disabled) return;
     onChange(folderId);
     close();
   }
@@ -165,7 +168,7 @@ export function FolderTreeSelect({
     }}>
     <span id={`${id}-label`} className="mb-1.5 block text-xs font-medium">{caption}</span>
     <button ref={trigger} type="button" aria-labelledby={`${id}-label ${id}-value`}
-      aria-expanded={open} aria-haspopup="tree" aria-controls={open ? `${id}-tree` : undefined}
+      disabled={disabled} aria-expanded={open && !disabled} aria-haspopup="tree" aria-controls={open && !disabled ? `${id}-tree` : undefined}
       title={path} onClick={() => open ? close() : show()}
       onKeyDown={event => {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -174,12 +177,12 @@ export function FolderTreeSelect({
           else focusRow(selectedId);
         }
       }}
-      className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm focus-visible:outline-2 focus-visible:outline-sky-500 dark:border-white/20 dark:bg-white/5">
+      className="flex min-h-11 w-full min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-sky-500 dark:border-white/20 dark:bg-white/5">
       <FolderOpen size={17} aria-hidden="true" className="shrink-0 text-sky-600 dark:text-sky-400" />
       <span id={`${id}-value`} className="min-w-0 flex-1 truncate">{path}</span>
       <ChevronDown size={16} aria-hidden="true" className={`shrink-0 ${open ? 'rotate-180' : ''}`} />
     </button>
-    {open && <div className="mt-2 flex max-h-[min(60dvh,28rem)] min-w-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg dark:border-white/20 dark:bg-zinc-900">
+    {open && !disabled && <div className="mt-2 flex max-h-[min(60dvh,28rem)] min-w-0 flex-col overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg dark:border-white/20 dark:bg-zinc-900">
       <div className="flex shrink-0 items-center gap-2 border-b border-slate-200 px-3 py-2 dark:border-white/10">
         <Search size={15} aria-hidden="true" className="shrink-0 text-slate-500" />
         <input type="search" aria-label={t('searchFolders')} placeholder={t('searchFolders')}

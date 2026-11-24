@@ -67,6 +67,7 @@ test('package CLI completes a fresh build with shared styles and correct icon di
   assert.equal(manifest.background.service_worker, 'background.js');
   assert.ok(entries['background.js']);
   assert.deepEqual(manifest.permissions, ['storage', 'contextMenus', 'activeTab']);
+  assert.deepEqual(manifest.optional_permissions, ['bookmarks']);
   assert.equal(manifest.commands['save-current-page'].suggested_key.default, 'Alt+Shift+D');
   assert.equal(manifest.commands['save-current-page'].suggested_key.mac, 'Alt+Shift+D');
   for (const size of [16, 32, 48, 128]) {

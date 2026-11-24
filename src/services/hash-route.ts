@@ -7,6 +7,7 @@ const paths: Record<ManagementSection, string> = {
   engines: '/settings/search-engines',
   appearance: '/settings/appearance',
   'import-export': '/settings/import-export',
+  'link-health': '/settings/link-health',
   trash: '/trash',
 };
 
@@ -27,6 +28,7 @@ export function routeTitle(route: AppRoute, language?: string): string {
     engines: ['搜索引擎', 'Search Engines'],
     appearance: ['外观设置', 'Appearance'],
     'import-export': ['导入与导出', 'Import & Export'],
+    'link-health': ['链接健康检查', 'Link health check'],
     trash: ['回收站', 'Trash'],
   };
   const title = route.page === 'desktop' ? (en ? 'Desktop' : '桌面')
