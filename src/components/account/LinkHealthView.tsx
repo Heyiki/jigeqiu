@@ -12,6 +12,13 @@ import { preferenceSaveError } from '../../services/preference-save-error';
 
 const button = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/20 dark:hover:bg-white/10';
 const selectStyle = 'h-10 w-full appearance-none rounded-lg border border-slate-300 bg-white py-2 pl-3 pr-9 text-sm text-slate-900 shadow-sm outline-none transition-colors hover:border-sky-400 focus-visible:ring-2 focus-visible:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50 [color-scheme:light] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100';
+const categoryStyle: Record<HealthCategory, string> = {
+  success: 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-400/30 dark:bg-emerald-400/15 dark:text-emerald-200',
+  missing: 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-400/30 dark:bg-rose-400/15 dark:text-rose-200',
+  restricted: 'border-orange-300 bg-orange-50 text-orange-800 dark:border-orange-400/30 dark:bg-orange-400/15 dark:text-orange-200',
+  temporary: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/15 dark:text-amber-200',
+  unchecked: 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500 dark:bg-slate-700/60 dark:text-slate-200',
+};
 type PermissionPlan = { entries: ScanBookmark[]; recheck: boolean };
 
 export function LinkHealthView({ controller, platform, bookmarks, folders, language, onTrash }: {
@@ -128,7 +135,7 @@ export function LinkHealthView({ controller, platform, bookmarks, folders, langu
     {error && <p role="alert" className="break-words text-sm text-rose-600 dark:text-rose-300">{error}</p>}
     <div className="flex flex-wrap gap-2">
       <input type="search" aria-label={t('healthSearch')} placeholder={t('healthSearch')} value={query} onChange={event => { setQuery(event.target.value); setPage(1); resetSelection(); }} className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 text-sm dark:border-white/20" />
-      <span className="relative max-w-full"><select aria-label={t('healthFilter')} value={category} onChange={event => { setCategory(event.target.value as typeof category); setPage(1); resetSelection(); }} className={selectStyle}>
+      <span className="relative ml-auto max-w-full shrink-0"><select aria-label={t('healthFilter')} value={category} onChange={event => { setCategory(event.target.value as typeof category); setPage(1); resetSelection(); }} className={selectStyle}>
         {(['all', 'missing', 'restricted', 'temporary', 'unchecked'] as const).map(value => <option key={value} value={value}>{t(`health_${value}`)}</option>)}
       </select><ChevronDown size={16} aria-hidden="true" className="pointer-events-none absolute right-3 top-3 text-slate-500 dark:text-slate-300" /></span>
     </div>
@@ -145,7 +152,7 @@ export function LinkHealthView({ controller, platform, bookmarks, folders, langu
           <input type="checkbox" className="mt-1 shrink-0" aria-label={t('healthSelect', { title: row.bookmark.title || row.bookmark.url })} checked={selected.has(row.bookmark.id)} onChange={event => setSelected(current => { const next = new Set(current); if (event.target.checked) next.add(row.bookmark.id); else next.delete(row.bookmark.id); return next; })} />
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium" title={row.bookmark.title}>{row.bookmark.title || row.bookmark.url}</p>
             {networkTarget(row.bookmark.url) ? <div className="mt-1 min-w-0"><a href={row.bookmark.url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full min-w-0 items-center gap-1 align-top text-xs text-sky-600 dark:text-sky-300"><span className="min-w-0 truncate">{row.bookmark.url}</span><ExternalLink size={12} className="shrink-0" /></a></div> : <p className="truncate text-xs text-slate-500">{row.bookmark.url}</p>}
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"><span className="rounded bg-amber-500/10 px-2 py-1 text-amber-800 dark:text-amber-200">{t(`health_${row.category as Exclude<HealthCategory, 'success'>}`)}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"><span data-health-category={row.category} className={`rounded border px-2 py-1 font-medium ${categoryStyle[row.category]}`}>{t(`health_${row.category as Exclude<HealthCategory, 'success'>}`)}</span>
               <span>{row.reason === 'http' ? t('health_reason_http', { status: row.status ?? 0 }) : t(`health_reason_${row.reason}`)}</span>
               <span className="text-slate-500">{folderNames.get(row.bookmark.folderId ?? '') ?? t('healthFolderRoot')}</span>
               <span className="text-slate-500">{t('healthChecked', { time: new Date(row.checkedAt).toLocaleTimeString(language === 'en' ? 'en-US' : 'zh-CN') })}</span>
