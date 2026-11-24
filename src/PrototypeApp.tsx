@@ -95,9 +95,11 @@ export default function PrototypeApp() {
         setSettings(current => current.language === language
           && current.wallpaperPreset === next.wallpaperPreset && current.customWallpaperId === next.customWallpaperId
           && current.backgroundType === next.backgroundType
+          && current.launchpadBackgroundBlur === next.launchpadBackgroundBlur
           && JSON.stringify(current.gradientBackground) === JSON.stringify(next.gradientBackground)
           ? current : { ...current, language, wallpaperPreset: next.wallpaperPreset, customWallpaperId: next.customWallpaperId,
-            backgroundType: next.backgroundType, gradientBackground: next.gradientBackground });
+            backgroundType: next.backgroundType, gradientBackground: next.gradientBackground,
+            launchpadBackgroundBlur: next.launchpadBackgroundBlur });
       } catch { /* Keep the rendered background if preferences cannot be read. */ }
       try { setLibraryChanged(storage.hasLibraryChanges()); }
       catch { setLibraryChanged(true); }
@@ -1080,6 +1082,7 @@ export default function PrototypeApp() {
 
       {/* macOS Launchpad (应用抽屉 / 启动台) */}
       {isLaunchpadOpen && <Launchpad
+        backgroundBlur={settings.launchpadBackgroundBlur}
         onboarding={taskContext?.task === 'pin' ? taskContext : undefined}
         onRevealDesktop={revealPinnedBookmark}
         isOpen={isLaunchpadOpen}

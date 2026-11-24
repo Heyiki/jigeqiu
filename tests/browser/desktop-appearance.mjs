@@ -132,8 +132,8 @@ try {
       'Launchpad must not blur or expose the desktop icons behind it');
     const launchpadImage = await launchpad.evaluate(el => getComputedStyle(el, '::before').backgroundImage);
     assert.ok(launchpadImage.includes(`${preset}-desktop.webp`), 'Launchpad reuses the selected wallpaper');
-    assert.equal(await launchpad.evaluate(el => getComputedStyle(el, '::before').filter), 'none',
-      'Launchpad preserves desktop wallpaper sharpness and saturation');
+    assert.equal(await launchpad.evaluate(el => getComputedStyle(el, '::before').filter), 'blur(12px)',
+      'Launchpad blurs only its wallpaper by the default amount');
     const launchpadWash = await launchpad.evaluate(el => {
       const probe = document.createElement('span');
       el.append(probe);

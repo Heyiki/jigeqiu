@@ -17,10 +17,12 @@ import { TaskHint } from '../onboarding/TaskHint';
 import type { OnboardingTaskContext } from '../onboarding/types';
 import './launchpad.css';
 import { useLaunchpadGestures } from './use-launchpad-gestures';
+import { normalizeLaunchpadBlur } from '../../services/launchpad-background';
 
 export interface LaunchpadProps {
   isOpen: boolean;
   browseOnOpen?: boolean;
+  backgroundBlur?: number;
   onClose(): void;
   bookmarks: Bookmark[];
   folders: Folder[];
@@ -41,7 +43,7 @@ export interface LaunchpadProps {
 const alphabet = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', '#'];
 const gridClass = 'launchpad-grid grid grid-cols-3 justify-items-center gap-x-2 gap-y-6 sm:grid-cols-4 sm:gap-x-5 sm:gap-y-8 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7';
 
-export function Launchpad({ isOpen, browseOnOpen = false, onClose, bookmarks, folders, desktopBookmarkIds,
+export function Launchpad({ isOpen, browseOnOpen = false, backgroundBlur, onClose, bookmarks, folders, desktopBookmarkIds,
   dockBookmarkIds = [], language, onboarding, onRevealDesktop, onOpenBookmark, onTogglePinDesktop, onToggleDockBookmark, onManageBookmark, onEditBookmark, onDeleteBookmark, onShowToast,
 }: LaunchpadProps) {
   const t = createTranslator(language);
@@ -321,7 +323,8 @@ export function Launchpad({ isOpen, browseOnOpen = false, onClose, bookmarks, fo
 
   if (!isOpen) return null;
   return <div ref={root} tabIndex={-1} data-panel="launchpad" role="dialog" aria-modal="true" aria-label={text('启动台', 'Launchpad')}
-    onKeyDown={event => { pointerSelection.current = false; handleKeys(event); }} style={{ letterSpacing: 0 }}
+    onKeyDown={event => { pointerSelection.current = false; handleKeys(event); }}
+    style={{ letterSpacing: 0, '--launchpad-background-blur': `${normalizeLaunchpadBlur(backgroundBlur)}px` } as React.CSSProperties}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}
     className="launchpad-shell fixed inset-0 z-[1200] flex flex-col overflow-hidden pb-4 pt-5 outline-none">
     <header className="launchpad-header mx-auto mb-3 grid w-full max-w-6xl shrink-0 grid-cols-[1fr_auto] items-center gap-3 px-4 pr-10 sm:grid-cols-[auto_1fr_auto] sm:px-12 sm:pr-14">

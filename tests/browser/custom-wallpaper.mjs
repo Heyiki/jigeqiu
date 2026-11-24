@@ -88,7 +88,53 @@ try {
     ['three.png', 'two.png', 'one.png']);
   await page.reload();
   await imageReady();
+  // Returning to a tab must keep the already decoded custom image in place.
+  for (const event of ['focus', 'visibilitychange', 'wallpaper-change']) {
+    const images = await page.evaluate(async event => {
+      const root = document.querySelector('.wallpaper-root');
+      const before = root.style.getPropertyValue('--wallpaper-image');
+      const originalGet = IDBObjectStore.prototype.get;
+      await new Promise(resolve => {
+        IDBObjectStore.prototype.get = function (...args) {
+          if (this.name === 'images') {
+            this.transaction.addEventListener('complete', () => {
+              requestAnimationFrame(() => requestAnimationFrame(resolve));
+            }, { once: true });
+          }
+          return originalGet.apply(this, args);
+        };
+        (event === 'visibilitychange' ? document : window).dispatchEvent(new Event(event));
+      });
+      IDBObjectStore.prototype.get = originalGet;
+      return { before, after: root.style.getPropertyValue('--wallpaper-image') };
+    }, event);
+    assert.equal(images.after, images.before, `${event} must not replace an unchanged wallpaper URL`);
+  }
+  // Hold decoding to expose any premature removal or revocation of the old image.
+  const previousImage = await page.evaluate(() => {
+    window.originalDecode = HTMLImageElement.prototype.decode;
+    window.wallpaperDecodeStarted = false;
+    const gate = new Promise(resolve => { window.releaseWallpaperDecode = resolve; });
+    HTMLImageElement.prototype.decode = async function () {
+      await window.originalDecode.call(this);
+      window.wallpaperDecodeStarted = true;
+      await gate;
+    };
+    return document.querySelector('.wallpaper-root').style.getPropertyValue('--wallpaper-image');
+  });
   await page.getByRole('button', { name: '使用背景：one.png', exact: true }).click();
+  await page.waitForFunction(() => window.wallpaperDecodeStarted);
+  assert.equal(await page.locator('.wallpaper-root').evaluate(el => el.style.getPropertyValue('--wallpaper-image')), previousImage);
+  const previousUrl = previousImage.match(/url\("(.+)"\)/)[1];
+  assert.equal(await page.evaluate(async url => (await fetch(url)).ok, previousUrl), true);
+  await page.evaluate(() => {
+    HTMLImageElement.prototype.decode = window.originalDecode;
+    window.releaseWallpaperDecode();
+  });
+  await page.waitForFunction(previous => document.querySelector('.wallpaper-root').style.getPropertyValue('--wallpaper-image') !== previous, previousImage);
+  await page.waitForFunction(async url => {
+    try { await fetch(url); return false; } catch { return true; }
+  }, previousUrl);
   await page.waitForFunction(id => JSON.parse(localStorage.getItem('jipage_settings_v1')).customWallpaperId === id, ids[0]);
   await page.getByRole('button', { name: '选择壁纸：雪山晨光', exact: true }).click();
   assert.equal((await keys()).images.length, 3);

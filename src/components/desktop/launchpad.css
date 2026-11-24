@@ -6,23 +6,36 @@
 }
 
 .launchpad-shell::before,
-.launchpad-shell::after {
+.launchpad-shell::after,
+.launchpad-preview::before,
+.launchpad-preview::after {
   content: "";
   position: absolute;
   pointer-events: none;
 }
 
 /* Repaint only the wallpaper; backdrop-filter would also expose desktop icons. */
-.launchpad-shell::before {
-  inset: 0;
+.launchpad-shell::before,
+.launchpad-preview::before {
+  inset: calc(var(--launchpad-background-blur, 12px) * -2);
   z-index: -2;
   background: var(--wallpaper-base) var(--wallpaper-image) center / cover no-repeat;
+  filter: blur(var(--launchpad-background-blur, 12px));
 }
 
-.launchpad-shell::after {
+.launchpad-shell::after,
+.launchpad-preview::after {
   inset: 0;
   z-index: -1;
   background: var(--wallpaper-wash), linear-gradient(var(--wallpaper-stage-wash), var(--wallpaper-stage-wash));
+}
+
+.launchpad-preview {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  color: var(--wallpaper-label);
+  background: var(--wallpaper-base);
 }
 
 .launchpad-shell .launchpad-title,

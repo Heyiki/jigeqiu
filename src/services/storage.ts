@@ -17,6 +17,7 @@ import {
   DEFAULT_USER_SETTINGS,
 } from '../data/defaultData';
 import { normalizeBookmarkUrl, parseBookmarkKeywords, normalizeBookmarkIcon } from './bookmark-input';
+import { normalizeLaunchpadBlur } from './launchpad-background';
 import { getBookmarkSourcePlatform } from './bookmark-source-platform';
 import type { Layout } from '../domain/assets/model';
 import {
@@ -1124,6 +1125,7 @@ export class StorageManager {
     const saved = this.safeGet<Partial<UserSettings> | null>(STORAGE_KEYS.SETTINGS, null);
     const settings: UserSettings = {
       ...DEFAULT_USER_SETTINGS, ...saved, language: selectLocale(saved?.language), customWallpaperFit: 'cover',
+      launchpadBackgroundBlur: normalizeLaunchpadBlur(saved?.launchpadBackgroundBlur),
     };
     const data = this.envelope(applicationStorage().getItem(STORAGE_KEYS.LIBRARY));
     const effective = data?.dockBookmarkIds ? { ...settings, dockBookmarkIds: data.dockBookmarkIds as string[] } : settings;
@@ -1133,7 +1135,9 @@ export class StorageManager {
 
   saveUserSettings(settings: Partial<UserSettings>): UserSettings {
     const current = this.getUserSettings();
-    const updated = { ...current, ...settings };
+    const updated = { ...current, ...settings,
+      launchpadBackgroundBlur: normalizeLaunchpadBlur(settings.launchpadBackgroundBlur ?? current.launchpadBackgroundBlur),
+    };
     if (settings.dockBookmarkIds !== undefined) {
       if (this.dockBase !== JSON.stringify(current.dockBookmarkIds ?? [])) throw new Error('CONFLICT');
       const library = this.readLibrary();

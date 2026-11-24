@@ -1,6 +1,14 @@
 import type { MessageTable } from './index';
 
 export const wallpaperMessages = {
+  launchpadSettingsTitle: { zh: '启动台', en: 'Launchpad' },
+  launchpadBackgroundBlur: { zh: '启动台背景模糊', en: 'Launchpad background blur' },
+  launchpadBlurDescription: { zh: '只模糊启动台背景，图标和文字保持清晰。拖动可预览，松开后保存。', en: 'Blur only the Launchpad background, keeping icons and text sharp. Drag to preview; release to save.' },
+  launchpadBlurOff: { zh: '关闭', en: 'Off' },
+  launchpadBlurStrong: { zh: '较强', en: 'Stronger' },
+  launchpadBlurReset: { zh: '恢复默认模糊', en: 'Reset blur to default' },
+  launchpadBlurPreview: { zh: '启动台背景预览', en: 'Launchpad background preview' },
+  launchpadBlurSaveFailed: { zh: '启动台设置未保存，请重试。', en: 'Launchpad settings were not saved. Please retry.' },
   backgroundType: { zh: '背景类型', en: 'Background type' },
   backgroundWallpaper: { zh: '壁纸', en: 'Wallpaper' },
   backgroundGradient: { zh: '渐变', en: 'Gradient' },
